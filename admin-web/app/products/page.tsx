@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import ProductImage from '@/components/ProductImage'
 
 interface Product {
   id: string
@@ -154,20 +155,7 @@ export default function ProductsPage() {
                   {products.map((product) => (
                     <tr key={product.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {product.image_url ? (
-                          <img
-                            src={product.image_url}
-                            alt={product.name}
-                            className="h-12 w-12 object-cover rounded"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=No+Image'
-                            }}
-                          />
-                        ) : (
-                          <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
-                            No Image
-                          </div>
-                        )}
+                        <ProductImage src={product.image_url} alt={product.name} size="sm" />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {product.sku}
