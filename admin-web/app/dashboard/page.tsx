@@ -84,13 +84,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+            <Link href="/products" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 📦 Products
               </h3>
               <p className="text-gray-600 text-sm mb-4">Manage product catalog, HSN codes, GST rates, and pricing</p>
-              <span className="text-xs text-gray-500">Coming soon</span>
-            </div>
+              <span className="text-xs text-blue-600 font-medium">View Products →</span>
+            </Link>
             
             <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
