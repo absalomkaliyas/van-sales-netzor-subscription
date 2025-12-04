@@ -42,17 +42,33 @@ export default function CustomerDetailPage() {
   async function loadCustomer() {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      // Fetch customer
+      const { data: customerData, error: customerError } = await supabase
         .from('customers')
-        .select(`
-          *,
-          price_list:price_lists(name)
-        `)
+        .select('*')
         .eq('id', customerId)
         .single()
 
-      if (error) throw error
-      setCustomer(data)
+      if (customerError) throw customerError
+
+      // Fetch price list if customer has one
+      let priceList = null
+      if (customerData.price_list_id) {
+        const { data: priceListData, error: priceListError } = await supabase
+          .from('price_lists')
+          .select('name')
+          .eq('id', customerData.price_list_id)
+          .single()
+
+        if (!priceListError && priceListData) {
+          priceList = priceListData
+        }
+      }
+
+      setCustomer({
+        ...customerData,
+        price_list: priceList
+      })
     } catch (err: any) {
       setError(err.message || 'Error loading customer')
       console.error('Error loading customer:', err)

@@ -19,7 +19,7 @@ interface Customer {
   is_active: boolean
   price_list?: {
     name: string
-  }
+  } | null
 }
 
 export default function CustomersPage() {
@@ -36,16 +36,35 @@ export default function CustomersPage() {
   async function loadCustomers() {
     try {
       setLoading(true)
-      const { data, error } = await supabase
+      // Fetch customers
+      const { data: customersData, error: customersError } = await supabase
         .from('customers')
-        .select(`
-          *,
-          price_list:price_lists(name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setCustomers(data || [])
+      if (customersError) throw customersError
+
+      // Fetch price lists
+      const { data: priceListsData, error: priceListsError } = await supabase
+        .from('price_lists')
+        .select('id, name')
+
+      if (priceListsError) throw priceListsError
+
+      // Create a map of price lists
+      const priceListMap = new Map(
+        (priceListsData || []).map(pl => [pl.id, pl])
+      )
+
+      // Merge customers with price list data
+      const customersWithPriceLists = (customersData || []).map(customer => ({
+        ...customer,
+        price_list: customer.price_list_id 
+          ? priceListMap.get(customer.price_list_id) 
+          : null
+      }))
+
+      setCustomers(customersWithPriceLists)
     } catch (err: any) {
       setError(err.message)
       console.error('Error loading customers:', err)
