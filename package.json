@@ -1,0 +1,27 @@
+{
+  "name": "van-sales-netzor-subscription",
+  "version": "1.0.0",
+  "description": "Field Sales & Automatic Invoicing System for NETZOR",
+  "private": true,
+  "workspaces": [
+    "admin-web",
+    "mobile-app"
+  ],
+  "scripts": {
+    "dev:admin": "cd admin-web && npm run dev",
+    "dev:mobile": "cd mobile-app && npm start",
+    "build:admin": "cd admin-web && npm run build",
+    "build:mobile": "cd mobile-app && npm run build"
+  },
+  "keywords": [
+    "field-sales",
+    "invoicing",
+    "gst",
+    "tally",
+    "erp",
+    "mobile-app"
+  ],
+  "author": "NETZOR",
+  "license": "MIT"
+}
+
