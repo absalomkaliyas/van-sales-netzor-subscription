@@ -7,12 +7,8 @@
 ## ✅ Step 3: Create Admin User - COMPLETED!
 
 ## ✅ Step 4: Test Admin Portal - COMPLETED!
-
-**Admin portal is running at: http://localhost:3000**
-
-**Optional: Test Supabase Connection**
-- Visit: http://localhost:3000/test-connection
-- Should show: ✅ Connection Successful!
+- ✅ Admin portal running at: http://localhost:3000
+- ✅ Supabase connection verified: Connection Successful!
 
 ---
 
@@ -22,7 +18,7 @@
 
 ### 5a. Start the Mobile App
 
-1. Open a NEW PowerShell window (keep admin portal running in the other one)
+1. Open a **NEW PowerShell window** (keep admin portal running in the first one)
 2. Navigate to mobile-app:
    ```powershell
    cd "B:\VAN Sales Netzor Subscription\mobile-app"
@@ -33,28 +29,30 @@
    npm start
    ```
 
-4. Wait for Expo to start (you'll see a QR code and options)
+4. Wait for Expo to start (you'll see a QR code and menu options)
 
 ### 5b. Run on Device or Emulator
 
 **Option A: Physical Device (Recommended)**
-1. Install **Expo Go** app on your phone (iOS or Android)
-2. Scan the QR code with:
-   - **iOS**: Camera app
-   - **Android**: Expo Go app
+1. Install **Expo Go** app on your phone:
+   - **iOS**: App Store → Search "Expo Go"
+   - **Android**: Google Play Store → Search "Expo Go"
+2. Scan the QR code:
+   - **iOS**: Use Camera app to scan QR code
+   - **Android**: Open Expo Go app → Scan QR code
 3. App will load on your device
 
 **Option B: Android Emulator**
-1. Press `a` in the terminal
-2. App will open in Android emulator (if installed)
+- Press `a` in the terminal
+- Requires Android Studio/emulator installed
 
 **Option C: iOS Simulator (Mac only)**
-1. Press `i` in the terminal
-2. App will open in iOS simulator
+- Press `i` in the terminal
+- Requires Xcode installed
 
 ### How to verify:
 - ✅ Expo starts without errors
-- ✅ QR code appears
+- ✅ QR code appears in terminal
 - ✅ App loads on device/emulator
 - ✅ No connection errors
 
@@ -65,3 +63,10 @@
 ## 🎉 Setup Complete!
 
 After Step 5, your entire system will be set up and ready to use!
+
+**Next Steps:**
+- Build authentication system
+- Create product catalog
+- Set up user management
+- Build order & invoicing system
+- And more!
