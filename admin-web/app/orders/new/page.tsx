@@ -44,7 +44,6 @@ export default function NewOrderPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [priceListItems, setPriceListItems] = useState<Map<string, PriceListItem>>(new Map())
-  const [selectedCustomer, setSelectedCustomer] = useState<string>('')
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [discountAmount, setDiscountAmount] = useState(0)
 
@@ -59,10 +58,10 @@ export default function NewOrderPage() {
   }, [])
 
   useEffect(() => {
-    if (selectedCustomer) {
-      loadPriceListForCustomer(selectedCustomer)
+    if (formData.customer_id) {
+      loadPriceListForCustomer(formData.customer_id)
     }
-  }, [selectedCustomer])
+  }, [formData.customer_id])
 
   async function loadCustomers() {
     try {
@@ -96,20 +95,42 @@ export default function NewOrderPage() {
 
   async function loadPriceListForCustomer(customerId: string) {
     try {
-      const customer = customers.find(c => c.id === customerId)
-      if (!customer?.price_list_id) return
+      // Fetch customer with price list
+      const { data: customerData, error: customerError } = await supabase
+        .from('customers')
+        .select('price_list_id')
+        .eq('id', customerId)
+        .single()
+
+      if (customerError || !customerData?.price_list_id) {
+        setPriceListItems(new Map())
+        return
+      }
+
+      // Get current date for effective_from
+      const today = new Date().toISOString().split('T')[0]
 
       const { data, error } = await supabase
         .from('price_list_items')
         .select('product_id, mrp, trade_price, promotional_price')
-        .eq('price_list_id', customer.price_list_id)
-        .eq('effective_from', new Date().toISOString().split('T')[0])
+        .eq('price_list_id', customerData.price_list_id)
+        .lte('effective_from', today)
+        .or(`effective_to.is.null,effective_to.gte.${today}`)
+        .order('effective_from', { ascending: false })
 
       if (error) throw error
 
       const priceMap = new Map<string, PriceListItem>()
+      // Group by product_id and take the most recent price
+      const productPriceMap = new Map<string, any>()
       data?.forEach(item => {
-        priceMap.set(item.product_id, {
+        if (!productPriceMap.has(item.product_id)) {
+          productPriceMap.set(item.product_id, item)
+        }
+      })
+
+      productPriceMap.forEach((item, productId) => {
+        priceMap.set(productId, {
           mrp: item.mrp,
           trade_price: item.trade_price,
           promotional_price: item.promotional_price
@@ -118,6 +139,7 @@ export default function NewOrderPage() {
       setPriceListItems(priceMap)
     } catch (err: any) {
       console.error('Error loading price list:', err)
+      setPriceListItems(new Map())
     }
   }
 
@@ -220,7 +242,25 @@ export default function NewOrderPage() {
         .eq('id', user.id)
         .single()
 
-      if (userError) throw userError
+      if (userError) {
+        console.warn('User hub_id not found, will need to handle this')
+      }
+
+      // If no hub_id, try to get a default hub or create order without hub
+      // For now, we'll require hub_id - in production, you might want to handle this differently
+      if (!userData?.hub_id) {
+        // Try to get any hub as fallback (for testing)
+        const { data: defaultHub } = await supabase
+          .from('hubs')
+          .select('id')
+          .limit(1)
+          .single()
+
+        if (!defaultHub?.id) {
+          throw new Error('No hub available. Please contact administrator to assign a hub.')
+        }
+        userData.hub_id = defaultHub.id
+      }
 
       const totals = calculateOrderTotals()
 
@@ -234,7 +274,7 @@ export default function NewOrderPage() {
           order_number: orderNumber,
           customer_id: formData.customer_id,
           user_id: user.id,
-          hub_id: userData?.hub_id || null,
+          hub_id: userData.hub_id,
           route_id: formData.route_id || null,
           status: 'draft',
           subtotal: totals.subtotal,
@@ -331,7 +371,6 @@ export default function NewOrderPage() {
                         value={formData.customer_id}
                         onChange={(e) => {
                           setFormData({ ...formData, customer_id: e.target.value })
-                          setSelectedCustomer(e.target.value)
                         }}
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       >
