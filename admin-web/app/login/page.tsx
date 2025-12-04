@@ -17,20 +17,22 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      console.log('Attempting to sign in with:', email)
       const result = await signIn(email, password)
       console.log('Sign in result:', result)
       
       if (result && result.user) {
-        // Wait a bit for session to be set
-        await new Promise(resolve => setTimeout(resolve, 500))
-        router.push('/dashboard')
-        router.refresh()
+        console.log('Sign in successful, redirecting...')
+        // Wait a bit for session to be set in cookies
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        window.location.href = '/dashboard'
       } else {
-        setError('Sign in failed - no user returned')
+        console.error('Sign in failed - no user in result:', result)
+        setError('Sign in failed - please check your credentials')
       }
     } catch (err: any) {
       console.error('Login error:', err)
-      setError(err.message || 'Invalid email or password')
+      setError(err.message || 'Invalid email or password. Please check your credentials.')
     } finally {
       setLoading(false)
     }
@@ -52,6 +54,7 @@ export default function LoginPage() {
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               <p className="font-semibold">Error:</p>
               <p>{error}</p>
+              <p className="text-xs mt-2">Check browser console (F12) for details</p>
             </div>
           )}
           <div className="rounded-md shadow-sm -space-y-px">
@@ -101,9 +104,9 @@ export default function LoginPage() {
             </button>
           </div>
           
-          <div className="text-center text-sm text-gray-600">
-            <p>Test credentials:</p>
-            <p className="text-xs mt-1">Email: absalomkaliyas@gmail.com</p>
+          <div className="text-center text-xs text-gray-500">
+            <p>Make sure user exists in Supabase Auth</p>
+            <p>Email: absalomkaliyas@gmail.com</p>
           </div>
         </form>
       </div>

@@ -9,19 +9,26 @@ export interface AuthUser {
 }
 
 export async function signIn(email: string, password: string) {
+  console.log('signIn called with email:', email)
+  
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
 
+  console.log('Supabase auth response:', { data, error })
+
   if (error) {
-    console.error('Sign in error:', error)
+    console.error('Supabase auth error:', error)
     throw error
   }
 
-  if (!data.user) {
+  if (!data || !data.user) {
+    console.error('No user data returned from Supabase')
     throw new Error('No user returned from sign in')
   }
+
+  console.log('Auth successful, fetching user data from users table...')
 
   // Get user details from users table
   const { data: userData, error: userError } = await supabase
@@ -30,14 +37,15 @@ export async function signIn(email: string, password: string) {
     .eq('id', data.user.id)
     .single()
 
+  console.log('Users table query result:', { userData, userError })
+
   if (userError) {
-    console.error('User data fetch error:', userError)
-    // Don't throw if user doesn't exist in users table yet
-    // Just return the auth user
-    return { user: data.user, userData: null }
+    console.warn('User not found in users table, but auth succeeded:', userError)
+    // Don't throw - auth succeeded, just user data not in table
+    return { user: data.user, userData: null, session: data.session }
   }
 
-  return { user: data.user, userData }
+  return { user: data.user, userData, session: data.session }
 }
 
 export async function signOut() {

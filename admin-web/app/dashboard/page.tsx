@@ -36,7 +36,7 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -74,38 +74,75 @@ export default function DashboardPage() {
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="border-4 border-dashed border-gray-200 rounded-lg p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Welcome to Dashboard!
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome, {user.name}! 👋
             </h2>
-            <p className="text-gray-600 mb-6">
-              Field Sales & Automatic Invoicing System
+            <p className="text-gray-600">
+              Field Sales & Automatic Invoicing System Dashboard
             </p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Products
-                </h3>
-                <p className="text-gray-600">Manage product catalog</p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Orders
-                </h3>
-                <p className="text-gray-600">View and manage orders</p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Users
-                </h3>
-                <p className="text-gray-600">Manage users and roles</p>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                📦 Products
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">Manage product catalog, HSN codes, GST rates, and pricing</p>
+              <span className="text-xs text-gray-500">Coming soon</span>
             </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                🛒 Orders
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">View and manage sales orders</p>
+              <span className="text-xs text-gray-500">Coming soon</span>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                🧾 Invoices
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">Generate GST-compliant invoices</p>
+              <span className="text-xs text-gray-500">Coming soon</span>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                👥 Users
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">Manage users, roles, and permissions</p>
+              <span className="text-xs text-gray-500">Coming soon</span>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                🏢 Hubs
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">Manage warehouses and sub-hubs</p>
+              <span className="text-xs text-gray-500">Coming soon</span>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                📊 Reports
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">View sales, stock, and performance reports</p>
+              <span className="text-xs text-gray-500">Coming soon</span>
+            </div>
+          </div>
+
+          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">
+              🎉 System Ready!
+            </h3>
+            <p className="text-blue-800 text-sm">
+              Your authentication system is working perfectly. You can now start building features!
+            </p>
           </div>
         </div>
       </main>
     </div>
   )
 }
-
