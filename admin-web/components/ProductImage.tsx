@@ -19,7 +19,16 @@ export default function ProductImage({ src, alt, className = '', size = 'sm' }: 
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
 
-  if (!src || imageError) {
+  // Reset states when src changes
+  useState(() => {
+    if (src) {
+      setImageError(false)
+      setImageLoading(true)
+    }
+  })
+
+  // If no src or error, show placeholder
+  if (!src || src.trim() === '' || imageError) {
     return (
       <div
         className={`${sizeClasses[size]} bg-gray-100 rounded flex items-center justify-center text-xs text-gray-500 border border-gray-200 ${className}`}
@@ -40,8 +49,15 @@ export default function ProductImage({ src, alt, className = '', size = 'sm' }: 
         src={src}
         alt={alt}
         className={`${sizeClasses[size]} object-cover rounded border border-gray-200 ${imageLoading ? 'opacity-0' : 'opacity-100'} transition-opacity`}
-        onError={() => setImageError(true)}
-        onLoad={() => setImageLoading(false)}
+        onError={(e) => {
+          console.error('Image load error:', src, e)
+          setImageError(true)
+          setImageLoading(false)
+        }}
+        onLoad={() => {
+          console.log('Image loaded successfully:', src)
+          setImageLoading(false)
+        }}
       />
     </div>
   )

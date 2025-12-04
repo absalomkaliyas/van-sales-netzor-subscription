@@ -38,6 +38,8 @@ export default function ProductsPage() {
         .order('created_at', { ascending: false })
 
       if (error) throw error
+      console.log('Products loaded:', data)
+      console.log('First product image_url:', data?.[0]?.image_url)
       setProducts(data || [])
     } catch (err: any) {
       setError(err.message)
