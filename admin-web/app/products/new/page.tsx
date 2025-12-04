@@ -18,6 +18,7 @@ export default function NewProductPage() {
     gst_rate: 0,
     unit: 'PCS',
     pack_size: 1,
+    image_url: '',
     is_active: true,
   })
 
@@ -204,6 +205,33 @@ export default function NewProductPage() {
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="1.00"
                   />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="image_url" className="block text-sm font-medium text-gray-700">
+                    Product Image URL
+                  </label>
+                  <input
+                    type="url"
+                    id="image_url"
+                    name="image_url"
+                    value={formData.image_url}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  {formData.image_url && (
+                    <div className="mt-2">
+                      <img
+                        src={formData.image_url}
+                        alt="Preview"
+                        className="h-24 w-24 object-cover rounded border"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none'
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="md:col-span-2">

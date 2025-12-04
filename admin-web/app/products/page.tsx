@@ -13,6 +13,7 @@ interface Product {
   gst_rate: number
   unit: string
   pack_size: number
+  image_url?: string
   is_active: boolean
   created_at: string
 }
@@ -121,6 +122,9 @@ export default function ProductsPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Image
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       SKU
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -149,6 +153,22 @@ export default function ProductsPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {products.map((product) => (
                     <tr key={product.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="h-12 w-12 object-cover rounded"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=No+Image'
+                            }}
+                          />
+                        ) : (
+                          <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">
+                            No Image
+                          </div>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {product.sku}
                       </td>
