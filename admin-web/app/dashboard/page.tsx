@@ -93,6 +93,14 @@ export default function DashboardPage() {
               <span className="text-xs text-blue-600 font-medium">View Products →</span>
             </Link>
             
+            <Link href="/price-lists" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                💰 Price Lists
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">Manage MRP, trade prices, and promotional pricing</p>
+              <span className="text-xs text-blue-600 font-medium">View Price Lists →</span>
+            </Link>
+            
             <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 🛒 Orders
