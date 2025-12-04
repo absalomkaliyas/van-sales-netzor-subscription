@@ -36,9 +36,30 @@ BEGIN
         RAISE EXCEPTION 'No active users found. Please add users first.';
     END IF;
     
-    -- If no hub_id, get first hub
+    -- If no hub_id, get first hub or create a default one
     IF hub_id_var IS NULL THEN
         SELECT id INTO hub_id_var FROM hubs LIMIT 1;
+        
+        -- If still no hub, create a default hub
+        IF hub_id_var IS NULL THEN
+            INSERT INTO hubs (name, address, city, state, pincode, is_warehouse)
+            VALUES (
+                'Default Hub',
+                'Default Address',
+                'Default City',
+                'Default State',
+                '000000',
+                true
+            )
+            RETURNING id INTO hub_id_var;
+            
+            RAISE NOTICE 'Created default hub with ID: %', hub_id_var;
+        END IF;
+    END IF;
+    
+    -- Ensure we have a hub_id before proceeding
+    IF hub_id_var IS NULL THEN
+        RAISE EXCEPTION 'Could not find or create a hub. Please create a hub first.';
     END IF;
     
     -- Get sample products
