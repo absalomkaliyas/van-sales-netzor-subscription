@@ -14,21 +14,30 @@ export async function signIn(email: string, password: string) {
     password,
   })
 
-  if (error) throw error
-
-  // Get user details from users table
-  if (data.user) {
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', data.user.id)
-      .single()
-
-    if (userError) throw userError
-    return { user: data.user, userData }
+  if (error) {
+    console.error('Sign in error:', error)
+    throw error
   }
 
-  return { user: data.user }
+  if (!data.user) {
+    throw new Error('No user returned from sign in')
+  }
+
+  // Get user details from users table
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', data.user.id)
+    .single()
+
+  if (userError) {
+    console.error('User data fetch error:', userError)
+    // Don't throw if user doesn't exist in users table yet
+    // Just return the auth user
+    return { user: data.user, userData: null }
+  }
+
+  return { user: data.user, userData }
 }
 
 export async function signOut() {
@@ -37,9 +46,11 @@ export async function signOut() {
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
   
-  if (!user) return null
+  if (authError || !user) {
+    return null
+  }
 
   const { data: userData, error } = await supabase
     .from('users')
@@ -47,7 +58,9 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     .eq('id', user.id)
     .single()
 
-  if (error || !userData) return null
+  if (error || !userData) {
+    return null
+  }
 
   return {
     id: userData.id,
