@@ -20,7 +20,10 @@ module.exports = {
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "CAMERA"
-      ]
+      ],
+      compileSdkVersion: 34,
+      targetSdkVersion: 34,
+      buildToolsVersion: "34.0.0"
     },
     plugins: [
       "expo-router"

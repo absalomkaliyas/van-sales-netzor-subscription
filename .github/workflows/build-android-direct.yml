@@ -55,6 +55,32 @@ jobs:
         EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
       run: |
         npx expo prebuild --platform android --clean
+        # Create gradle.properties if it doesn't exist
+        mkdir -p android
+        if [ ! -f android/gradle.properties ]; then
+          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" > android/gradle.properties
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+          echo "expo.autolinking=true" >> android/gradle.properties
+        fi
+
+    - name: Fix Gradle Configuration
+      working-directory: ./mobile-app/android
+      run: |
+        # Create build.gradle with SDK versions if needed
+        if [ -f build.gradle ]; then
+          # Add SDK versions to root build.gradle
+          if ! grep -q "compileSdkVersion" build.gradle; then
+            sed -i '/allprojects {/a\    ext {\n        compileSdkVersion = 34\n        targetSdkVersion = 34\n        buildToolsVersion = "34.0.0"\n        minSdkVersion = 21\n    }' build.gradle
+          fi
+        fi
+        
+        # Ensure gradle.properties exists
+        if [ ! -f gradle.properties ]; then
+          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" > gradle.properties
+          echo "android.useAndroidX=true" >> gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+        fi
 
     - name: Build APK
       working-directory: ./mobile-app/android
