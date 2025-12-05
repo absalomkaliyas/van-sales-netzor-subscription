@@ -11,7 +11,8 @@
     "web": "expo start --web",
     "build:android": "eas build --platform android",
     "build:ios": "eas build --platform ios",
-    "auto-fix": "powershell -ExecutionPolicy Bypass -File ./scripts/auto-fix-all.ps1"
+    "build:now": "powershell -ExecutionPolicy Bypass -File ./scripts/build-now.ps1",
+    "auto-fix": "powershell -ExecutionPolicy Bypass -File ./scripts/build-now.ps1"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.1.3",
