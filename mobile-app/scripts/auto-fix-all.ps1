@@ -92,9 +92,9 @@ Write-Host "  ✓ app.json check complete" -ForegroundColor Green
 Write-Host ""
 
 # Step 5: Fix dependencies
-Write-Host "Step 4: Fixing dependencies with expo install --fix..." -ForegroundColor Yellow
+Write-Host "Step 4: Fixing dependencies with npx expo install --fix..." -ForegroundColor Yellow
 Write-Host "  (This may take a few minutes...)" -ForegroundColor Gray
-$fixResult = & npx expo install --fix 2>&1
+$fixResult = & npx -y expo install --fix 2>&1
 if ($LASTEXITCODE -eq 0) {
     Write-Host "  ✓ Dependencies fixed" -ForegroundColor Green
 } else {
@@ -104,7 +104,7 @@ Write-Host ""
 
 # Step 6: Verify EAS environment variables
 Write-Host "Step 5: Checking EAS environment variables..." -ForegroundColor Yellow
-$envCheck = & eas env:list 2>&1
+$envCheck = & npx -y eas env:list 2>&1
 if ($envCheck -match "EXPO_PUBLIC_SUPABASE_URL" -and $envCheck -match "EXPO_PUBLIC_SUPABASE_ANON_KEY") {
     Write-Host "  ✓ Environment variables are set" -ForegroundColor Green
 } else {
@@ -116,7 +116,7 @@ Write-Host ""
 
 # Step 7: Run expo doctor
 Write-Host "Step 6: Running expo doctor..." -ForegroundColor Yellow
-$doctorResult = & npx expo-doctor 2>&1
+$doctorResult = & npx -y expo-doctor 2>&1
 if ($LASTEXITCODE -eq 0) {
     Write-Host "  ✓ expo doctor passed" -ForegroundColor Green
 } else {
@@ -133,5 +133,5 @@ Write-Host "All fixes applied. Starting build..." -ForegroundColor Green
 Write-Host "This will take 10-15 minutes..." -ForegroundColor Cyan
 Write-Host ""
 
-& eas build --platform android --profile preview
+& npx -y eas-cli build --platform android --profile preview
 
