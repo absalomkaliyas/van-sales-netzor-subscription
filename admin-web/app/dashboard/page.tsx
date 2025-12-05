@@ -209,15 +209,6 @@ export default function DashboardPage() {
               <span className="text-xs text-blue-600 font-medium">View Locations →</span>
             </Link>
           </div>
-
-          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-blue-900 mb-2">
-              🎉 System Ready!
-            </h3>
-            <p className="text-blue-800 text-sm">
-              Your authentication system is working perfectly. You can now start building features!
-            </p>
-          </div>
         </div>
       </main>
     </div>
