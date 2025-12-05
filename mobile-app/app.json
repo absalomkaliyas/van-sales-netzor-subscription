@@ -29,7 +29,11 @@
         "ACCESS_COARSE_LOCATION",
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -49,7 +53,11 @@
         }
       ]
     ],
-    "scheme": "vansales"
+    "scheme": "vansales",
+    "extra": {
+      "eas": {
+        "projectId": "307a5b40-8250-4e97-80e8-25bef212bd6e"
+      }
+    }
   }
 }
-
