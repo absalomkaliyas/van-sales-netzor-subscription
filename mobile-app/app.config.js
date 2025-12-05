@@ -1,4 +1,4 @@
-// app.config.js - Dynamic configuration
+// app.config.js - Minimal working configuration
 module.exports = {
   expo: {
     name: "VAN Sales NETZOR",
@@ -10,35 +10,20 @@ module.exports = {
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
-    assetBundlePatterns: [
-      "**/*"
-    ],
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.netzor.vansales"
     },
     android: {
       package: "com.netzor.vansales",
-      compileSdkVersion: 34,
-      targetSdkVersion: 34,
-      buildToolsVersion: "34.0.0",
       permissions: [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "CAMERA"
       ]
     },
-    web: {},
     plugins: [
-      "expo-router",
-      [
-        "expo-location",
-        {
-          locationAlwaysAndWhenInUsePermission: "Allow VAN Sales to use your location for route tracking and attendance."
-        }
-      ]
+      "expo-router"
     ],
     scheme: "vansales",
     extra: {
