@@ -35,12 +35,6 @@ module.exports = {
         {
           locationAlwaysAndWhenInUsePermission: "Allow VAN Sales to use your location for route tracking and attendance."
         }
-      ],
-      [
-        "expo-camera",
-        {
-          cameraPermission: "Allow VAN Sales to access your camera for taking photos of deliveries and receipts."
-        }
       ]
     ],
     scheme: "vansales",
