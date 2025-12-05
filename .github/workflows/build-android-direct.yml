@@ -19,8 +19,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: mobile-app/package-lock.json
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -36,7 +34,12 @@ jobs:
 
     - name: Install dependencies
       working-directory: ./mobile-app
-      run: npm ci
+      run: |
+        if [ -f package-lock.json ]; then
+          npm ci
+        else
+          npm install
+        fi
 
     - name: Install Expo CLI
       run: npm install -g @expo/cli
