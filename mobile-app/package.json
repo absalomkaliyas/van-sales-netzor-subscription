@@ -5,6 +5,7 @@
   "scripts": {
     "start": "expo start",
     "start:windows": "powershell -ExecutionPolicy Bypass -File ./scripts/start-fixed.ps1",
+    "fix:windows": "powershell -ExecutionPolicy Bypass -File ./scripts/fix-expo-windows.ps1",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
