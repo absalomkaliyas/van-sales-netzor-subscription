@@ -13,6 +13,7 @@
     "build:ios": "eas build --platform ios"
   },
   "dependencies": {
+    "@expo/config-plugins": "~8.0.0",
     "@expo/metro-runtime": "~3.2.3",
     "@hookform/resolvers": "^3.3.4",
     "@react-native-async-storage/async-storage": "1.23.1",
