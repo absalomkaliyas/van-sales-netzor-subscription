@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'VAN Sales - NETZOR Admin Portal',
-  description: 'Field Sales & Automatic Invoicing System',
+  title: 'Field Sales & Automatic Invoicing System - NETZOR',
+  description: 'Field Sales & Automatic Invoicing System Powered by NETZOR',
 }
 
 export default function RootLayout({
