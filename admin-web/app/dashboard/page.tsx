@@ -149,13 +149,13 @@ export default function DashboardPage() {
               <span className="text-xs text-blue-600 font-medium">View Routes →</span>
             </Link>
             
-            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+            <Link href="/users" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 👥 Users
               </h3>
               <p className="text-gray-600 text-sm mb-4">Manage users, roles, and permissions</p>
-              <span className="text-xs text-gray-500">Coming soon</span>
-            </div>
+              <span className="text-xs text-blue-600 font-medium">View Users →</span>
+            </Link>
             
             <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
