@@ -14,4 +14,12 @@ config.resolver = {
 // Workaround for Windows directory creation issue
 config.watchFolders = [path.resolve(__dirname)];
 
+// Additional workaround: Skip problematic externals
+config.server = {
+  ...config.server,
+  enhanceMiddleware: (middleware) => {
+    return middleware;
+  },
+};
+
 module.exports = config;
