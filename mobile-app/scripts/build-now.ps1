@@ -20,10 +20,10 @@ Write-Host "[1/6] Fixing package.json..." -ForegroundColor Yellow
 $packagePath = Join-Path $projectRoot "package.json"
 $packageJson = Get-Content $packageJson -Raw | ConvertFrom-Json
 
-# Ensure Expo SDK 49
-if ($packageJson.dependencies.expo -ne "~49.0.0") {
-    $packageJson.dependencies.expo = "~49.0.0"
-    Write-Host "  → Set Expo to SDK 49" -ForegroundColor Cyan
+# Ensure Expo SDK 50 (fixes Gradle useCoreDependencies error)
+if ($packageJson.dependencies.expo -ne "~50.0.0") {
+    $packageJson.dependencies.expo = "~50.0.0"
+    Write-Host "  → Set Expo to SDK 50 (fixes Gradle error)" -ForegroundColor Cyan
 }
 
 # Remove @expo/config-plugins
