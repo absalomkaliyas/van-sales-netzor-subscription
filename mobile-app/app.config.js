@@ -29,6 +29,7 @@ module.exports = {
     },
     web: {},
     plugins: [
+      "expo-router",
       [
         "expo-location",
         {
