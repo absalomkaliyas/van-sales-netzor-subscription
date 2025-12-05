@@ -89,7 +89,7 @@ export default function DashboardPage() {
         <div className="px-4 py-6 sm:px-0">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome, {user.name}! 👋
+              Welcome Admin
             </h2>
             <p className="text-gray-600">
               Field Sales & Automatic Invoicing System Dashboard
