@@ -1,0 +1,83 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: mobile-app/package-lock.json
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Install dependencies
+      working-directory: ./mobile-app
+      run: npm ci
+
+    - name: Install EAS CLI
+      run: npm install -g eas-cli
+
+    - name: Setup Expo
+      working-directory: ./mobile-app
+      run: |
+        npm install -g @expo/cli
+        npx expo install --fix
+
+    - name: Configure EAS
+      working-directory: ./mobile-app
+      env:
+        EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      run: |
+        if [ -n "$EXPO_TOKEN" ]; then
+          eas login --non-interactive
+        fi
+
+    - name: Build APK with EAS
+      working-directory: ./mobile-app
+      env:
+        EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+      run: |
+        eas build --platform android --profile preview --non-interactive --no-wait
+
+    - name: Wait for build and download
+      working-directory: ./mobile-app
+      run: |
+        # Wait for build to complete
+        sleep 300
+        # Download latest build
+        eas build:list --platform android --limit 1 --json > build-info.json
+        BUILD_URL=$(cat build-info.json | jq -r '.[0].artifacts.buildUrl // empty')
+        if [ -n "$BUILD_URL" ]; then
+          curl -L -o app.apk "$BUILD_URL"
+        fi
+
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: android-apk
+        path: mobile-app/app.apk
+        retention-days: 30
+

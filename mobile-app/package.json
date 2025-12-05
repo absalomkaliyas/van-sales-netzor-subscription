@@ -12,7 +12,9 @@
     "build:android": "eas build --platform android",
     "build:ios": "eas build --platform ios",
     "build:now": "powershell -ExecutionPolicy Bypass -File ./scripts/build-now.ps1",
-    "auto-fix": "powershell -ExecutionPolicy Bypass -File ./scripts/build-now.ps1"
+    "auto-fix": "powershell -ExecutionPolicy Bypass -File ./scripts/build-now.ps1",
+    "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local-android.ps1",
+    "build:rn": "powershell -ExecutionPolicy Bypass -File ./scripts/build-with-react-native-cli.ps1"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.1.3",
