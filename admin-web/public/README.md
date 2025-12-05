@@ -2,12 +2,12 @@
 
 ## Logo
 
-Place your NETZOR logo file here as `logo.jpg`.
+Place your NETZOR logo file here as `logo.png`.
 
 The logo should be:
-- Format: JPG/JPEG
+- Format: PNG (with transparency preferred)
 - Size: At least 200x200px (will be displayed at 40x40px in nav, 64x64px on login)
-- File name: `logo.jpg`
+- File name: `logo.png`
 
 The logo will be displayed in:
 - Dashboard navigation
