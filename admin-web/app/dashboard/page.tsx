@@ -165,13 +165,13 @@ export default function DashboardPage() {
               <span className="text-xs text-gray-500">Coming soon</span>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
+            <Link href="/reports" className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 📊 Reports
               </h3>
               <p className="text-gray-600 text-sm mb-4">View sales, stock, and performance reports</p>
-              <span className="text-xs text-gray-500">Coming soon</span>
-            </div>
+              <span className="text-xs text-blue-600 font-medium">View Reports →</span>
+            </Link>
           </div>
 
           <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
