@@ -10,6 +10,7 @@ interface Product {
   name: string
   unit: string
   image_url?: string
+  stock_quantity?: number
 }
 
 export default function ProductsScreen() {
@@ -23,14 +24,48 @@ export default function ProductsScreen() {
 
   async function loadProducts() {
     try {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Get user's hub
+      const { data: userData } = await supabase
+        .from('users')
+        .select('hub_id')
+        .eq('id', user.id)
+        .single()
+
+      // Load products with stock from user's hub
+      const { data: productsData, error: productsError } = await supabase
         .from('products')
         .select('*')
         .eq('is_active', true)
         .order('name')
 
-      if (error) throw error
-      setProducts(data || [])
+      if (productsError) throw productsError
+
+      // Get stock quantities for user's hub
+      if (userData?.hub_id) {
+        const { data: inventoryData } = await supabase
+          .from('inventory')
+          .select('product_id, quantity')
+          .eq('hub_id', userData.hub_id)
+          .gt('quantity', 0)
+
+        const stockMap = new Map()
+        inventoryData?.forEach(item => {
+          const existing = stockMap.get(item.product_id) || 0
+          stockMap.set(item.product_id, existing + item.quantity)
+        })
+
+        const productsWithStock = (productsData || []).map(product => ({
+          ...product,
+          stock_quantity: stockMap.get(product.id) || 0,
+        }))
+
+        setProducts(productsWithStock)
+      } else {
+        setProducts(productsData || [])
+      }
     } catch (error: any) {
       console.error('Error loading products:', error)
     } finally {
@@ -51,6 +86,23 @@ export default function ProductsScreen() {
         <Text style={styles.productName}>{item.name}</Text>
         <Text style={styles.productSku}>SKU: {item.sku}</Text>
         <Text style={styles.productUnit}>Unit: {item.unit}</Text>
+        {item.stock_quantity !== undefined && (
+          <View style={styles.stockRow}>
+            <Ionicons 
+              name={item.stock_quantity > 0 ? "checkmark-circle" : "close-circle"} 
+              size={14} 
+              color={item.stock_quantity > 0 ? "#10b981" : "#ef4444"} 
+            />
+            <Text style={[
+              styles.stockText,
+              item.stock_quantity === 0 && styles.outOfStock
+            ]}>
+              {item.stock_quantity > 0 
+                ? `Available: ${item.stock_quantity} ${item.unit}`
+                : 'Out of Stock'}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   )
@@ -135,6 +187,20 @@ const styles = StyleSheet.create({
   productUnit: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  stockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  stockText: {
+    fontSize: 12,
+    color: '#10b981',
+    fontWeight: '600',
+  },
+  outOfStock: {
+    color: '#ef4444',
   },
 })
 

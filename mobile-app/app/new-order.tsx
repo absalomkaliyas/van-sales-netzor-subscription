@@ -22,6 +22,8 @@ interface OrderItem {
   product: Product
   quantity: number
   price: number
+  gst_rate: number
+  available_stock: number
 }
 
 export default function NewOrderScreen() {
@@ -34,8 +36,11 @@ export default function NewOrderScreen() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [showCustomerSelect, setShowCustomerSelect] = useState(false)
   const [showProductSelect, setShowProductSelect] = useState(false)
+  const [hubId, setHubId] = useState<string | null>(null)
+  const [stockMap, setStockMap] = useState<Map<string, number>>(new Map())
 
   useEffect(() => {
+    loadUserHub()
     loadCustomers()
     loadProducts()
     if (params.customerId) {
@@ -43,6 +48,12 @@ export default function NewOrderScreen() {
       if (customer) setSelectedCustomer(customer)
     }
   }, [])
+
+  useEffect(() => {
+    if (selectedCustomer && hubId) {
+      loadStock()
+    }
+  }, [selectedCustomer, hubId])
 
   async function loadCustomers() {
     const { data } = await supabase
@@ -53,23 +64,82 @@ export default function NewOrderScreen() {
     setCustomers(data || [])
   }
 
+  async function loadUserHub() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data } = await supabase
+      .from('users')
+      .select('hub_id')
+      .eq('id', user.id)
+      .single()
+
+    if (data?.hub_id) {
+      setHubId(data.hub_id)
+    }
+  }
+
+  async function loadStock() {
+    if (!hubId) return
+
+    const { data } = await supabase
+      .from('inventory')
+      .select('product_id, quantity')
+      .eq('hub_id', hubId)
+      .gt('quantity', 0)
+
+    const stock = new Map<string, number>()
+    data?.forEach(item => {
+      const existing = stock.get(item.product_id) || 0
+      stock.set(item.product_id, existing + item.quantity)
+    })
+    setStockMap(stock)
+  }
+
   async function loadProducts() {
     const { data } = await supabase
       .from('products')
-      .select('id, name, sku, unit')
+      .select('id, name, sku, unit, gst_rate')
       .eq('is_active', true)
       .order('name')
     setProducts(data || [])
   }
 
-  function addProduct(product: Product) {
+  async function addProduct(product: Product) {
+    if (!selectedCustomer?.price_list_id) {
+      Alert.alert('Error', 'Customer does not have a price list assigned')
+      return
+    }
+
+    // Check stock availability
+    const availableStock = stockMap.get(product.id) || 0
+    if (availableStock === 0) {
+      Alert.alert('Out of Stock', `${product.name} is not available in your hub inventory`)
+      return
+    }
+
     // Get price from customer's price list
-    // For now, use a default price
+    const { data: priceData } = await supabase
+      .from('price_list_items')
+      .select('trade_price, promotional_price, mrp')
+      .eq('price_list_id', selectedCustomer.price_list_id)
+      .eq('product_id', product.id)
+      .single()
+
+    const price = priceData?.trade_price || priceData?.promotional_price || priceData?.mrp || 0
+
+    if (price === 0) {
+      Alert.alert('Error', 'Price not found for this product in customer\'s price list')
+      return
+    }
+
     const newItem: OrderItem = {
       product_id: product.id,
       product,
       quantity: 1,
-      price: 0, // Will be fetched from price list
+      price: price,
+      gst_rate: product.gst_rate || 18,
+      available_stock: availableStock,
     }
     setOrderItems([...orderItems, newItem])
     setShowProductSelect(false)
@@ -77,6 +147,13 @@ export default function NewOrderScreen() {
 
   function updateQuantity(index: number, quantity: number) {
     const newItems = [...orderItems]
+    const item = newItems[index]
+    
+    if (quantity > item.available_stock) {
+      Alert.alert('Insufficient Stock', `Only ${item.available_stock} ${item.product.unit} available`)
+      return
+    }
+    
     newItems[index].quantity = Math.max(0, quantity)
     setOrderItems(newItems)
   }
@@ -111,9 +188,24 @@ export default function NewOrderScreen() {
       // Generate order number
       const orderNumber = `ORD-${new Date().toISOString().split('T')[0]}-${Math.floor(Math.random() * 10000)}`
 
-      // Calculate totals
-      const subtotal = orderItems.reduce((sum, item) => sum + (item.quantity * item.price), 0)
-      const taxAmount = subtotal * 0.18 // 18% GST
+      // Check stock before creating order
+      for (const item of orderItems) {
+        const availableStock = stockMap.get(item.product_id) || 0
+        if (item.quantity > availableStock) {
+          throw new Error(`Insufficient stock for ${item.product.name}. Available: ${availableStock} ${item.product.unit}`)
+        }
+      }
+
+      // Calculate totals with individual GST rates
+      let subtotal = 0
+      let taxAmount = 0
+
+      orderItems.forEach(item => {
+        const itemSubtotal = item.quantity * item.price
+        subtotal += itemSubtotal
+        taxAmount += itemSubtotal * (item.gst_rate / 100)
+      })
+
       const totalAmount = subtotal + taxAmount
 
       // Create order
@@ -158,8 +250,16 @@ export default function NewOrderScreen() {
     }
   }
 
-  const totalAmount = orderItems.reduce((sum, item) => sum + (item.quantity * item.price), 0)
-  const taxAmount = totalAmount * 0.18
+  // Calculate totals with individual GST rates
+  const totalAmount = orderItems.reduce((sum, item) => {
+    return sum + (item.quantity * item.price)
+  }, 0)
+  
+  const taxAmount = orderItems.reduce((sum, item) => {
+    const itemSubtotal = item.quantity * item.price
+    return sum + (itemSubtotal * (item.gst_rate / 100))
+  }, 0)
+  
   const grandTotal = totalAmount + taxAmount
 
   return (
@@ -224,9 +324,16 @@ export default function NewOrderScreen() {
                   <Ionicons name="trash" size={20} color="#ef4444" />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.itemTotal}>
-                ₹{(item.quantity * item.price).toFixed(2)}
-              </Text>
+              <View style={styles.itemRight}>
+                <Text style={styles.itemTotal}>
+                  ₹{(item.quantity * item.price).toFixed(2)}
+                </Text>
+                {item.quantity > item.available_stock && (
+                  <Text style={styles.stockWarning}>
+                    Stock: {item.available_stock}
+                  </Text>
+                )}
+              </View>
             </View>
           ))}
         </View>
@@ -240,7 +347,7 @@ export default function NewOrderScreen() {
               <Text style={styles.summaryValue}>₹{totalAmount.toFixed(2)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>GST (18%)</Text>
+              <Text style={styles.summaryLabel}>GST</Text>
               <Text style={styles.summaryValue}>₹{taxAmount.toFixed(2)}</Text>
             </View>
             <View style={[styles.summaryRow, styles.totalRow]}>
@@ -423,11 +530,18 @@ const styles = StyleSheet.create({
   removeButton: {
     marginLeft: 'auto',
   },
+  itemRight: {
+    alignItems: 'flex-end',
+  },
   itemTotal: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
-    textAlign: 'right',
+  },
+  stockWarning: {
+    fontSize: 10,
+    color: '#ef4444',
+    marginTop: 2,
   },
   summaryRow: {
     flexDirection: 'row',

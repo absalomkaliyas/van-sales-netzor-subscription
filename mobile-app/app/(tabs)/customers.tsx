@@ -34,16 +34,47 @@ export default function CustomersScreen() {
         .eq('id', user.id)
         .single()
 
-      // For now, load all active customers
-      // In production, filter by route assignment
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('is_active', true)
-        .order('name')
+      // Get customers assigned to user's route
+      const { data: routeData } = await supabase
+        .from('route_users')
+        .select('route_id')
+        .eq('user_id', user.id)
 
-      if (error) throw error
-      setCustomers(data || [])
+      if (routeData && routeData.length > 0) {
+        const routeIds = routeData.map(r => r.route_id)
+        
+        // Get customers from these routes
+        const { data: routeCustomers } = await supabase
+          .from('route_customers')
+          .select('customer_id')
+          .in('route_id', routeIds)
+
+        if (routeCustomers && routeCustomers.length > 0) {
+          const customerIds = routeCustomers.map(rc => rc.customer_id)
+          
+          const { data, error } = await supabase
+            .from('customers')
+            .select('*')
+            .in('id', customerIds)
+            .eq('is_active', true)
+            .order('name')
+
+          if (error) throw error
+          setCustomers(data || [])
+        } else {
+          setCustomers([])
+        }
+      } else {
+        // If no route assigned, show all active customers (fallback)
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('is_active', true)
+          .order('name')
+
+        if (error) throw error
+        setCustomers(data || [])
+      }
     } catch (error: any) {
       console.error('Error loading customers:', error)
     } finally {

@@ -24,7 +24,7 @@ export default function TabsLayout() {
         options={{
           title: 'Products',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cube" size={size} color={color} />
+            <Ionicons name="list" size={size} color={color} />
           ),
         }}
       />
@@ -38,11 +38,29 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="inventory"
+        options={{
+          title: 'Inventory',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cube" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="orders"
         options={{
           title: 'Orders',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="receipt" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="payments"
+        options={{
+          title: 'Payments',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cash" size={size} color={color} />
           ),
         }}
       />

@@ -8,6 +8,9 @@ import { Ionicons } from '@expo/vector-icons'
 export default function HomeScreen() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
+  const [hub, setHub] = useState<any>(null)
+  const [inventoryCount, setInventoryCount] = useState(0)
+  const [pendingPayments, setPendingPayments] = useState(0)
   const [isCheckedIn, setIsCheckedIn] = useState(false)
   const [location, setLocation] = useState<Location.LocationObject | null>(null)
 
@@ -15,6 +18,7 @@ export default function HomeScreen() {
     loadUser()
     checkAttendanceStatus()
     requestLocationPermission()
+    loadDashboardData()
   }, [])
 
   async function loadUser() {
@@ -22,10 +26,49 @@ export default function HomeScreen() {
     if (user) {
       const { data } = await supabase
         .from('users')
-        .select('*')
+        .select('*, hubs(*)')
         .eq('id', user.id)
         .single()
       setUser(data)
+      if (data?.hub_id) {
+        setHub(data.hubs)
+      }
+    }
+  }
+
+  async function loadDashboardData() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Get user's hub
+      const { data: userData } = await supabase
+        .from('users')
+        .select('hub_id')
+        .eq('id', user.id)
+        .single()
+
+      if (!userData?.hub_id) return
+
+      // Count inventory items
+      const { count: inventoryCount } = await supabase
+        .from('inventory')
+        .select('*', { count: 'exact', head: true })
+        .eq('hub_id', userData.hub_id)
+        .gt('quantity', 0)
+
+      setInventoryCount(inventoryCount || 0)
+
+      // Count pending payments
+      const { count: paymentsCount } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('hub_id', userData.hub_id)
+        .in('payment_status', ['pending', 'partial'])
+
+      setPendingPayments(paymentsCount || 0)
+    } catch (error) {
+      console.error('Error loading dashboard data:', error)
     }
   }
 
@@ -100,6 +143,7 @@ export default function HomeScreen() {
 
       setIsCheckedIn(true)
       Alert.alert('Success', 'Checked in successfully')
+      loadDashboardData()
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to check in')
     }
@@ -144,6 +188,7 @@ export default function HomeScreen() {
 
       setIsCheckedIn(false)
       Alert.alert('Success', 'Checked out successfully')
+      loadDashboardData()
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to check out')
     }
@@ -172,6 +217,32 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Text style={styles.greeting}>Welcome, {user?.name || 'User'}</Text>
         <Text style={styles.role}>{user?.role || ''}</Text>
+        {hub && (
+          <View style={styles.hubInfo}>
+            <Ionicons name="business" size={16} color="#6b7280" />
+            <Text style={styles.hubName}>{hub.name}</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Dashboard Stats */}
+      <View style={styles.statsRow}>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => router.push('/(tabs)/inventory')}
+        >
+          <Ionicons name="cube" size={24} color="#2563eb" />
+          <Text style={styles.statValue}>{inventoryCount}</Text>
+          <Text style={styles.statLabel}>Products</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.statCard}
+          onPress={() => router.push('/(tabs)/payments')}
+        >
+          <Ionicons name="cash" size={24} color="#10b981" />
+          <Text style={styles.statValue}>{pendingPayments}</Text>
+          <Text style={styles.statLabel}>Pending</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
@@ -217,8 +288,24 @@ export default function HomeScreen() {
             style={styles.actionCard}
             onPress={() => router.push('/(tabs)/products')}
           >
-            <Ionicons name="cube" size={32} color="#2563eb" />
+            <Ionicons name="list" size={32} color="#2563eb" />
             <Text style={styles.actionText}>Products</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push('/(tabs)/inventory')}
+          >
+            <Ionicons name="cube" size={32} color="#2563eb" />
+            <Text style={styles.actionText}>Inventory</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={() => router.push('/(tabs)/payments')}
+          >
+            <Ionicons name="cash" size={32} color="#2563eb" />
+            <Text style={styles.actionText}>Payments</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -251,6 +338,44 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     textTransform: 'capitalize',
+  },
+  hubInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  hubName: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    margin: 16,
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginTop: 8,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
   },
   section: {
     backgroundColor: '#fff',
