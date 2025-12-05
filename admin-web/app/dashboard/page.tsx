@@ -55,7 +55,7 @@ export default function DashboardPage() {
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-3">
               <img 
-                src="/logo.png" 
+                src="/logo.jpg" 
                 alt="NETZOR Logo" 
                 className="h-10 w-10 object-contain"
                 onError={(e) => {

@@ -44,7 +44,7 @@ export default function LoginPage() {
         <div>
           <div className="flex justify-center mb-4">
             <img 
-              src="/logo.png" 
+              src="/logo.jpg" 
               alt="NETZOR Logo" 
               className="h-16 w-16 object-contain"
               onError={(e) => {
