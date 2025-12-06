@@ -66,45 +66,69 @@ workflows:
             fi
           done
           
-      - name: Verify Expo Prebuild Configuration
+      - name: Fix Expo Modules Autolinking
         script: |
           cd mobile-app
-          echo "🔧 Verifying expo prebuild configuration..."
+          echo "🔧 Fixing expo-modules-core autolinking in settings.gradle..."
           
-          # Check if settings.gradle has expo-modules-core autolinking
-          if [ -f "android/settings.gradle" ]; then
-            echo "Checking settings.gradle for expo-modules-core..."
-            if grep -q "expo-modules-core" android/settings.gradle; then
-              echo "✅ expo-modules-core found in settings.gradle"
-              echo "Relevant lines:"
-              grep -n "expo-modules-core" android/settings.gradle || true
-            else
-              echo "⚠️ expo-modules-core NOT found in settings.gradle"
-              echo "This is the problem - expo prebuild should have added it"
-              echo "First 50 lines of settings.gradle:"
-              head -50 android/settings.gradle
-            fi
-          fi
-          
-          # Check if the autolinking script exists
-          if [ -f "node_modules/expo-modules-core/scripts/autolinking.gradle" ]; then
-            echo "✅ autolinking.gradle exists"
-          else
-            echo "❌ autolinking.gradle NOT found!"
-            echo "This is required for expo-modules-core to work"
-            echo "Reinstalling expo-modules-core..."
+          # Verify expo-modules-core is installed
+          if [ ! -f "node_modules/expo-modules-core/scripts/autolinking.gradle" ]; then
+            echo "⚠️ autolinking.gradle not found, reinstalling..."
             npm install expo-modules-core@~1.11.0 --force
           fi
           
-          # Check build.gradle structure - should NOT have plugin in buildscript
-          if [ -f "android/build.gradle" ]; then
-            echo "Checking build.gradle - should NOT have plugin in buildscript..."
-            if grep -q "classpath.*expo-modules-core\|classpath.*gradle-plugin" android/build.gradle; then
-              echo "⚠️ Found incorrect plugin classpath - this should be removed"
+          # Fix settings.gradle for mobile-app
+          if [ -f "android/settings.gradle" ]; then
+            echo "Fixing android/settings.gradle..."
+            
+            # Check if autolinking is already there
+            if ! grep -q "expo-modules-core.*autolinking" android/settings.gradle; then
+              echo "Adding expo-modules-core autolinking..."
+              
+              # Get the correct path to autolinking.gradle
+              AUTOLINKING_PATH=$(node -e "
+                const path = require('path');
+                const rootDir = path.resolve('android');
+                const expoPath = require.resolve('expo-modules-core/package.json');
+                const autolinkingPath = path.join(path.dirname(expoPath), 'scripts', 'autolinking.gradle');
+                const relative = path.relative(rootDir, autolinkingPath);
+                console.log(relative);
+              " 2>/dev/null || echo "../node_modules/expo-modules-core/scripts/autolinking.gradle")
+              
+              echo "Autolinking path: $AUTOLINKING_PATH"
+              
+              # Add autolinking at the end of settings.gradle
+              printf '\n// Expo modules autolinking\n' >> android/settings.gradle
+              printf 'apply from: new File(["node", "--print", "require.resolve(\\\"expo-modules-core/package.json\\\")"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle")\n' >> android/settings.gradle
+              
+              echo "✅ Added autolinking to settings.gradle"
             else
-              echo "✅ No incorrect plugin classpath found"
+              echo "✅ Autolinking already in settings.gradle"
             fi
           fi
+          
+          # Also fix clone directory
+          if [ -f "/Users/builder/clone/mobile-app/android/settings.gradle" ]; then
+            echo "Fixing clone directory settings.gradle..."
+            if ! grep -q "expo-modules-core.*autolinking" /Users/builder/clone/mobile-app/android/settings.gradle; then
+              cd /Users/builder/clone/mobile-app
+              printf '\n// Expo modules autolinking\n' >> android/settings.gradle
+              printf 'apply from: new File(["node", "--print", "require.resolve(\\\"expo-modules-core/package.json\\\")"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle")\n' >> android/settings.gradle
+              echo "✅ Added autolinking to clone directory"
+            fi
+          fi
+          
+          # Verify the fix
+          echo "Verifying autolinking..."
+          for settings_file in "android/settings.gradle" "/Users/builder/clone/mobile-app/android/settings.gradle"; do
+            if [ -f "$settings_file" ]; then
+              if grep -q "expo-modules-core.*autolinking" "$settings_file"; then
+                echo "✅ Autolinking found in: $settings_file"
+              else
+                echo "⚠️ Autolinking NOT found in: $settings_file"
+              fi
+            fi
+          done
       - name: Fix Expo Module Plugin Configuration
         script: |
           cd mobile-app
