@@ -22,10 +22,23 @@ workflows:
         script: |
           cd mobile-app
           npx expo install --fix
+      - name: Install expo-modules-core
+        script: |
+          cd mobile-app
+          npm install expo-modules-core@~1.11.0
       - name: Prebuild Android
         script: |
           cd mobile-app
           npx expo prebuild --platform android --clean
+      - name: Fix Expo Module Plugin
+        script: |
+          cd mobile-app
+          # Verify expo-modules-core is installed
+          if [ ! -d "node_modules/expo-modules-core/android" ]; then
+            echo "Installing expo-modules-core..."
+            npm install expo-modules-core@~1.11.0
+          fi
+          echo "✅ expo-modules-core verified"
       - name: Patch Gradle Files
         script: |
           cd mobile-app
