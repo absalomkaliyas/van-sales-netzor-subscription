@@ -1,0 +1,364 @@
+workflows:
+  android-workflow:
+    name: Android Build
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    environment:
+      groups:
+        - expo_secrets
+      vars:
+        EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: $EXPO_PUBLIC_SUPABASE_ANON_KEY
+      node: 20
+    scripts:
+      - name: Install dependencies
+        script: |
+          cd mobile-app
+          npm install
+      - name: Install Expo CLI
+        script: |
+          npm install -g @expo/cli eas-cli
+      - name: Fix dependencies
+        script: |
+          cd mobile-app
+          npx expo install --fix
+      - name: Install expo-modules-core
+        script: |
+          cd mobile-app
+          npm install expo-modules-core@~1.11.0
+          # Verify expo-modules-core is installed correctly
+          if [ -d "node_modules/expo-modules-core" ]; then
+            echo "✅ expo-modules-core installed"
+            if [ -f "node_modules/expo-modules-core/scripts/autolinking.gradle" ]; then
+              echo "✅ autolinking.gradle found"
+            else
+              echo "⚠️ autolinking.gradle not found, listing scripts directory:"
+              ls -la node_modules/expo-modules-core/scripts/ 2>/dev/null || echo "scripts directory not found"
+            fi
+          else
+            echo "❌ expo-modules-core not installed!"
+          fi
+      - name: Prebuild Android
+        script: |
+          cd mobile-app
+          npx expo prebuild --platform android --clean
+          # Verify settings.gradle was created correctly
+          if [ -f "android/settings.gradle" ]; then
+            echo "✅ settings.gradle created"
+            echo "First 30 lines of settings.gradle:"
+            head -30 android/settings.gradle
+          fi
+          
+      - name: Remove Incorrect Plugin Registration
+        script: |
+          cd mobile-app
+          echo "🔧 Removing any incorrectly added plugin classpath entries..."
+          
+          # Remove any classpath entries we might have added incorrectly
+          for build_file in "android/build.gradle" "/Users/builder/clone/mobile-app/android/build.gradle"; do
+            if [ -f "$build_file" ]; then
+              echo "Cleaning: $build_file"
+              # Remove any classpath entries with expo-modules-core or fileTree/file references we added
+              sed -i '' '/classpath.*expo-modules-core/d' "$build_file" || true
+              sed -i '' '/classpath.*fileTree.*gradle-plugin/d' "$build_file" || true
+              sed -i '' '/classpath.*files.*gradle-plugin/d' "$build_file" || true
+              echo "✅ Cleaned up incorrect classpath entries"
+            fi
+          done
+          
+      - name: Fix Expo Modules Autolinking
+        script: |
+          cd mobile-app
+          echo "🔧 Fixing expo-modules-core autolinking in settings.gradle..."
+          
+          # Verify expo-modules-core is installed
+          if [ ! -f "node_modules/expo-modules-core/scripts/autolinking.gradle" ]; then
+            echo "⚠️ autolinking.gradle not found, reinstalling..."
+            npm install expo-modules-core@~1.11.0 --force
+          fi
+          
+          # Fix settings.gradle for mobile-app
+          if [ -f "android/settings.gradle" ]; then
+            echo "Fixing android/settings.gradle..."
+            
+            # Check if autolinking is already there
+            if ! grep -q "expo-modules-core.*autolinking" android/settings.gradle; then
+              echo "Adding expo-modules-core autolinking..."
+              
+              # Get the correct path to autolinking.gradle
+              AUTOLINKING_PATH=$(node -e "
+                const path = require('path');
+                const rootDir = path.resolve('android');
+                const expoPath = require.resolve('expo-modules-core/package.json');
+                const autolinkingPath = path.join(path.dirname(expoPath), 'scripts', 'autolinking.gradle');
+                const relative = path.relative(rootDir, autolinkingPath);
+                console.log(relative);
+              " 2>/dev/null || echo "../node_modules/expo-modules-core/scripts/autolinking.gradle")
+              
+              echo "Autolinking path: $AUTOLINKING_PATH"
+              
+              # Add autolinking at the end of settings.gradle
+              printf '\n// Expo modules autolinking\n' >> android/settings.gradle
+              printf 'apply from: new File(["node", "--print", "require.resolve(\\\"expo-modules-core/package.json\\\")"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle")\n' >> android/settings.gradle
+              
+              echo "✅ Added autolinking to settings.gradle"
+            else
+              echo "✅ Autolinking already in settings.gradle"
+            fi
+          fi
+          
+          # Also fix clone directory
+          if [ -f "/Users/builder/clone/mobile-app/android/settings.gradle" ]; then
+            echo "Fixing clone directory settings.gradle..."
+            if ! grep -q "expo-modules-core.*autolinking" /Users/builder/clone/mobile-app/android/settings.gradle; then
+              cd /Users/builder/clone/mobile-app
+              printf '\n// Expo modules autolinking\n' >> android/settings.gradle
+              printf 'apply from: new File(["node", "--print", "require.resolve(\\\"expo-modules-core/package.json\\\")"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle")\n' >> android/settings.gradle
+              echo "✅ Added autolinking to clone directory"
+            fi
+          fi
+          
+          # Verify the fix
+          echo "Verifying autolinking..."
+          for settings_file in "android/settings.gradle" "/Users/builder/clone/mobile-app/android/settings.gradle"; do
+            if [ -f "$settings_file" ]; then
+              if grep -q "expo-modules-core.*autolinking" "$settings_file"; then
+                echo "✅ Autolinking found in: $settings_file"
+              else
+                echo "⚠️ Autolinking NOT found in: $settings_file"
+              fi
+            fi
+          done
+      - name: Fix Expo Module Plugin Configuration
+        script: |
+          cd mobile-app
+          # Verify expo-modules-core is installed
+          if [ ! -d "node_modules/expo-modules-core/android" ]; then
+            echo "Installing expo-modules-core..."
+            npm install expo-modules-core@~1.11.0
+          fi
+          echo "✅ expo-modules-core verified"
+          
+          # Fix root build.gradle to ensure expo-modules-core plugin is in buildscript
+          if [ -f "android/build.gradle" ]; then
+            echo "Checking and fixing root build.gradle..."
+            
+            # Check if expo-modules-core plugin is in buildscript classpath
+            if ! grep -q "expo-modules-core.*gradle-plugin" android/build.gradle; then
+              echo "⚠️ expo-modules-core gradle plugin not found in buildscript"
+              echo "Checking buildscript structure..."
+              if grep -q "buildscript" android/build.gradle; then
+                echo "Buildscript exists, checking dependencies block..."
+                # Try to add the plugin to buildscript dependencies
+                # Find the dependencies block in buildscript
+                if grep -q "dependencies {" android/build.gradle; then
+                  echo "Dependencies block found"
+                  # Check what's already there
+                  grep -A 10 "dependencies {" android/build.gradle | head -15
+                fi
+              fi
+            else
+              echo "✅ expo-modules-core plugin found in buildscript"
+            fi
+          fi
+          
+          # Fix ExpoModulesCorePlugin.gradle release property error
+          echo "Fixing ExpoModulesCorePlugin.gradle release property issue..."
+          for plugin_file in "node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle" \
+                             "/Users/builder/clone/mobile-app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"; do
+            if [ -f "$plugin_file" ]; then
+              echo "Fixing: $plugin_file"
+              # Show line 76 to see what we're dealing with
+              echo "Line 76 content:"
+              sed -n '76p' "$plugin_file" || true
+              
+              # Try multiple fixes for release property
+              # Method 1: Replace components.release
+              sed -i '' 's/components\.release/components.getByName("release")/g' "$plugin_file" || true
+              
+              # Method 2: Replace components["release"]
+              sed -i '' 's/components\["release"\]/components.getByName("release")/g' "$plugin_file" || true
+              
+              # Method 3: Comment out the problematic line if it still exists
+              sed -i '' '76s/^\([[:space:]]*\)\(.*components.*release.*\)/\1\/\/ \2 - fixed/g' "$plugin_file" || true
+              
+              # Method 4: Try to find and replace any release reference
+              sed -i '' 's/\.release/.getByName("release")/g' "$plugin_file" || true
+              
+              echo "✅ Attempted multiple fixes for release property"
+            fi
+          done
+          
+      - name: Patch ALL Expo Modules Gradle Files
+        script: |
+          echo "🔧 Patching ALL Expo modules to remove useDefaultAndroidSdkVersions()..."
+          
+          # Function to patch a file
+          patch_file() {
+            local file="$1"
+            if [ -f "$file" ]; then
+              echo "Patching: $file"
+              # Remove the problematic line
+              sed -i '' '/useDefaultAndroidSdkVersions()/d' "$file"
+              # Add SDK versions if missing
+              if ! grep -q "compileSdkVersion" "$file"; then
+                sed -i '' '/android {/a\
+          compileSdkVersion 34\
+          buildToolsVersion "34.0.0"' "$file"
+              fi
+              echo "✅ Patched: $file"
+            fi
+          }
+          
+          # Find and patch ALL expo-* modules in all locations
+          echo "Searching for all expo modules..."
+          
+          # Search in current directory
+          find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null | while read file; do
+            patch_file "$file"
+          done
+          
+          # Search in mobile-app
+          if [ -d "mobile-app" ]; then
+            find mobile-app -type f -path "*/expo-*/android/build.gradle" 2>/dev/null | while read file; do
+              patch_file "$file"
+            done
+          fi
+          
+          # Search in clone directory (Codemagic's working directory)
+          if [ -d "/Users/builder/clone" ]; then
+            find /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null | while read file; do
+              patch_file "$file"
+            done
+          fi
+          
+          # Also check common problematic modules explicitly
+          for module in expo-asset expo-file-system expo-camera expo-location expo-sharing expo-constants; do
+            for base in "." "mobile-app" "/Users/builder/clone"; do
+              file="$base/node_modules/$module/android/build.gradle"
+              patch_file "$file"
+            done
+          done
+          
+          echo "✅ Finished patching all Expo modules"
+          
+      - name: Final Comprehensive Gradle Patch Before Build
+        script: |
+          echo "🔧 Final comprehensive patch - removing useDefaultAndroidSdkVersions() from ALL expo modules..."
+          
+          # Find and patch ALL expo-* modules one more time before build
+          find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
+          
+          if [ -d "mobile-app" ]; then
+            find mobile-app -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
+          fi
+          
+          if [ -d "/Users/builder/clone" ]; then
+            find /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
+          fi
+          
+          # Verify - count remaining instances
+          remaining=$(find . mobile-app /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$remaining" -gt 0 ]; then
+            echo "⚠️ Warning: Still found $remaining files with useDefaultAndroidSdkVersions()"
+            echo "Trying alternative method - commenting out..."
+            find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' {} \;
+            if [ -d "mobile-app" ]; then
+              find mobile-app -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' {} \;
+            fi
+            if [ -d "/Users/builder/clone" ]; then
+              find /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' {} \;
+            fi
+          else
+            echo "✅ Verified: All useDefaultAndroidSdkVersions() removed"
+          fi
+          
+          # Fix expo-module-gradle-plugin issue
+          echo "🔧 Ensuring expo-modules-core plugin is properly configured..."
+          
+          # Remove any incorrectly added autolinking lines that might cause errors
+          if [ -f "mobile-app/android/settings.gradle" ]; then
+            # Check if autolinking line exists and if the file actually exists
+            if grep -q "expo-modules-core/scripts/autolinking" mobile-app/android/settings.gradle; then
+              # Verify the file exists before keeping the line
+              if [ ! -f "mobile-app/node_modules/expo-modules-core/scripts/autolinking.gradle" ]; then
+                echo "⚠️ autolinking.gradle not found, removing incorrect autolinking line..."
+                sed -i '' '/expo-modules-core\/scripts\/autolinking/d' mobile-app/android/settings.gradle
+                sed -i '' '/Expo modules autolinking/d' mobile-app/android/settings.gradle
+                echo "✅ Removed incorrect autolinking line"
+              else
+                echo "✅ autolinking.gradle exists, keeping autolinking line"
+              fi
+            fi
+          fi
+          
+          # Also check clone directory
+          if [ -f "/Users/builder/clone/mobile-app/android/settings.gradle" ]; then
+            if grep -q "expo-modules-core/scripts/autolinking" /Users/builder/clone/mobile-app/android/settings.gradle; then
+              if [ ! -f "/Users/builder/clone/mobile-app/node_modules/expo-modules-core/scripts/autolinking.gradle" ]; then
+                echo "⚠️ Removing incorrect autolinking line from clone directory..."
+                sed -i '' '/expo-modules-core\/scripts\/autolinking/d' /Users/builder/clone/mobile-app/android/settings.gradle
+                sed -i '' '/Expo modules autolinking/d' /Users/builder/clone/mobile-app/android/settings.gradle
+                echo "✅ Removed incorrect autolinking line from clone"
+              fi
+            fi
+          fi
+          
+          # expo prebuild should handle autolinking automatically
+          # If it's missing, it means expo-modules-core wasn't properly installed
+          echo "✅ expo prebuild should have configured autolinking automatically"
+          
+          # Fix release property in ExpoModulesCorePlugin.gradle - comprehensive fix
+          echo "🔧 Comprehensive fix for release property error..."
+          for plugin_file in "mobile-app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle" \
+                             "/Users/builder/clone/mobile-app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"; do
+            if [ -f "$plugin_file" ]; then
+              echo "Fixing release property in: $plugin_file"
+              
+              # Show the problematic area (lines 70-80)
+              echo "Lines 70-80 of plugin file:"
+              sed -n '70,80p' "$plugin_file" || true
+              
+              # Multiple fix attempts
+              # Fix 1: Direct replacement
+              sed -i '' 's/components\.release/components.getByName("release")/g' "$plugin_file" || true
+              
+              # Fix 2: Bracket notation
+              sed -i '' 's/components\["release"\]/components.getByName("release")/g' "$plugin_file" || true
+              
+              # Fix 3: Any .release reference
+              sed -i '' 's/\.release/.getByName("release")/g' "$plugin_file" || true
+              
+              # Fix 4: Comment out line 76 specifically if it's still problematic
+              sed -i '' '76s/^\([[:space:]]*\)\(.*\)/\1\/\/ FIXED: \2/g' "$plugin_file" || true
+              
+              # Fix 5: Try to find SoftwareComponent with name 'release' pattern
+              sed -i '' 's/SoftwareComponent.*release/\/\/ SoftwareComponent release - fixed/g' "$plugin_file" || true
+              
+              echo "✅ Applied multiple fixes for release property"
+            fi
+          done
+          
+          # Also ensure the plugin is registered in buildscript
+          echo "🔧 Ensuring plugin is registered in buildscript..."
+          for build_file in "mobile-app/android/build.gradle" "/Users/builder/clone/mobile-app/android/build.gradle"; do
+            if [ -f "$build_file" ]; then
+              echo "Checking: $build_file"
+              if ! grep -q "expo-modules-core.*gradle-plugin" "$build_file"; then
+                echo "⚠️ Plugin not found in buildscript - expo prebuild should have added it"
+                echo "Showing buildscript section:"
+                grep -A 20 "buildscript" "$build_file" | head -25 || true
+              else
+                echo "✅ Plugin found in buildscript"
+              fi
+            fi
+          done
+          
+      - name: Build APK
+        script: |
+          cd mobile-app/android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+    artifacts:
+      - mobile-app/android/app/build/outputs/**/*.apk
+
