@@ -129,11 +129,9 @@ workflows:
           if [ -f "mobile-app/android/settings.gradle" ]; then
             if ! grep -q "expo-modules-core/scripts/autolinking" mobile-app/android/settings.gradle; then
               echo "Adding expo-modules-core autolinking to mobile-app/android/settings.gradle..."
-              cat >> mobile-app/android/settings.gradle << 'EOF'
-
-// Expo modules autolinking
-apply from: new File(["node", "--print", "require.resolve(\"expo-modules-core/package.json\")"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
-EOF
+              echo "" >> mobile-app/android/settings.gradle
+              echo "// Expo modules autolinking" >> mobile-app/android/settings.gradle
+              echo "apply from: new File([\"node\", \"--print\", \"require.resolve(\\\"expo-modules-core/package.json\\\")\"].execute(null, rootDir).text.trim(), \"../scripts/autolinking.gradle\");" >> mobile-app/android/settings.gradle
               echo "✅ Added expo-modules-core autolinking"
             fi
           fi
@@ -142,11 +140,9 @@ EOF
           if [ -f "/Users/builder/clone/mobile-app/android/settings.gradle" ]; then
             if ! grep -q "expo-modules-core/scripts/autolinking" /Users/builder/clone/mobile-app/android/settings.gradle; then
               echo "Adding expo-modules-core autolinking to clone directory..."
-              cat >> /Users/builder/clone/mobile-app/android/settings.gradle << 'EOF'
-
-// Expo modules autolinking
-apply from: new File(["node", "--print", "require.resolve(\"expo-modules-core/package.json\")"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
-EOF
+              echo "" >> /Users/builder/clone/mobile-app/android/settings.gradle
+              echo "// Expo modules autolinking" >> /Users/builder/clone/mobile-app/android/settings.gradle
+              echo "apply from: new File([\"node\", \"--print\", \"require.resolve(\\\"expo-modules-core/package.json\\\")\"].execute(null, rootDir).text.trim(), \"../scripts/autolinking.gradle\");" >> /Users/builder/clone/mobile-app/android/settings.gradle
               echo "✅ Added expo-modules-core autolinking to clone"
             fi
           fi
