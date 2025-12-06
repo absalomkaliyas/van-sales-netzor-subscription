@@ -49,66 +49,99 @@ workflows:
             head -30 android/settings.gradle
           fi
           
-      - name: Fix Buildscript Plugin Registration
+      - name: Fix Buildscript Plugin Registration - Comprehensive
         script: |
           cd mobile-app
-          echo "🔧 Fixing buildscript to include expo-module-gradle-plugin..."
+          echo "🔧 Comprehensive fix for expo-module-gradle-plugin registration..."
           
-          if [ -f "android/build.gradle" ]; then
-            echo "Checking build.gradle..."
+          # Function to fix build.gradle
+          fix_build_gradle() {
+            local build_file="$1"
+            local work_dir="$2"
             
-            # Check if expo-modules-core gradle plugin is in buildscript dependencies
-            if ! grep -q "expo-modules-core.*gradle-plugin" android/build.gradle; then
-              echo "⚠️ Plugin not found in buildscript, checking structure..."
-              
-              # Get the expo-modules-core path
-              EXPO_MODULES_CORE_PATH=$(node -e "console.log(require.resolve('expo-modules-core/package.json'))")
-              GRADLE_PLUGIN_PATH="${EXPO_MODULES_CORE_PATH%/package.json}/android/gradle-plugin"
-              
-              echo "Expo modules core path: $EXPO_MODULES_CORE_PATH"
-              echo "Gradle plugin path: $GRADLE_PLUGIN_PATH"
-              
-              # Check if gradle-plugin directory exists
-              if [ -d "$GRADLE_PLUGIN_PATH" ]; then
-                echo "✅ Gradle plugin directory exists"
-                
-                # Add classpath using echo to avoid YAML issues
-                if grep -q "classpath" android/build.gradle; then
-                  echo "Adding plugin to classpath..."
-                  # Find last classpath and add after it
-                  LAST_CLASSPATH_LINE=$(grep -n "classpath" android/build.gradle | tail -1 | cut -d: -f1)
-                  if [ -n "$LAST_CLASSPATH_LINE" ]; then
-                    # Use printf to create the line without YAML issues
-                    printf '        classpath files("%s")\n' "$GRADLE_PLUGIN_PATH" > /tmp/add_classpath_final.txt
-                    sed -i '' "${LAST_CLASSPATH_LINE}r /tmp/add_classpath_final.txt" android/build.gradle
-                    echo "✅ Added plugin to classpath"
-                  fi
-                fi
-              else
-                echo "⚠️ Gradle plugin directory not found at: $GRADLE_PLUGIN_PATH"
-              fi
-            else
-              echo "✅ Plugin already in buildscript"
+            if [ ! -f "$build_file" ]; then
+              return
             fi
+            
+            echo "Fixing: $build_file"
+            cd "$work_dir" || return
+            
+            # Get expo-modules-core path
+            EXPO_MODULES_CORE_PATH=$(node -e "console.log(require.resolve('expo-modules-core/package.json'))" 2>/dev/null)
+            if [ -z "$EXPO_MODULES_CORE_PATH" ]; then
+              echo "⚠️ Could not resolve expo-modules-core path"
+              return
+            fi
+            
+            GRADLE_PLUGIN_PATH="${EXPO_MODULES_CORE_PATH%/package.json}/android/gradle-plugin"
+            echo "Gradle plugin path: $GRADLE_PLUGIN_PATH"
+            
+            # Check if plugin is already in buildscript
+            if grep -q "expo-modules-core.*gradle-plugin\|expo-module-gradle-plugin" "$build_file"; then
+              echo "✅ Plugin already in buildscript"
+              return
+            fi
+            
+            # Check if buildscript exists
+            if ! grep -q "buildscript" "$build_file"; then
+              echo "⚠️ No buildscript found, cannot add plugin"
+              return
+            fi
+            
+            # Find dependencies block in buildscript
+            if grep -q "dependencies {" "$build_file"; then
+              echo "Adding plugin to buildscript dependencies..."
+              
+              # Find the line number of the last classpath or dependencies opening
+              LAST_CLASSPATH=$(grep -n "classpath" "$build_file" | tail -1 | cut -d: -f1)
+              
+              if [ -n "$LAST_CLASSPATH" ]; then
+                # Add after last classpath
+                INSERT_LINE=$((LAST_CLASSPATH + 1))
+              else
+                # Find dependencies { line and add after it
+                DEPS_LINE=$(grep -n "dependencies {" "$build_file" | head -1 | cut -d: -f1)
+                if [ -n "$DEPS_LINE" ]; then
+                  INSERT_LINE=$((DEPS_LINE + 1))
+                else
+                  echo "⚠️ Could not find insertion point"
+                  return
+                fi
+              fi
+              
+              # Create the classpath line
+              CLASSPATH_LINE="        classpath files(\"$GRADLE_PLUGIN_PATH\")"
+              echo "$CLASSPATH_LINE" > /tmp/plugin_classpath.txt
+              
+              # Insert the line
+              sed -i '' "${INSERT_LINE}r /tmp/plugin_classpath.txt" "$build_file"
+              echo "✅ Added plugin classpath at line $INSERT_LINE"
+            else
+              echo "⚠️ No dependencies block found in buildscript"
+            fi
+          }
+          
+          # Fix mobile-app/android/build.gradle
+          fix_build_gradle "android/build.gradle" "$(pwd)"
+          
+          # Fix clone directory
+          if [ -f "/Users/builder/clone/mobile-app/android/build.gradle" ]; then
+            fix_build_gradle "/Users/builder/clone/mobile-app/android/build.gradle" "/Users/builder/clone/mobile-app"
           fi
           
-          # Also fix in clone directory
-          if [ -f "/Users/builder/clone/mobile-app/android/build.gradle" ]; then
-            echo "Fixing clone directory build.gradle..."
-            if ! grep -q "expo-modules-core.*gradle-plugin" /Users/builder/clone/mobile-app/android/build.gradle; then
-              EXPO_MODULES_CORE_PATH=$(cd /Users/builder/clone/mobile-app && node -e "console.log(require.resolve('expo-modules-core/package.json'))")
-              GRADLE_PLUGIN_PATH="${EXPO_MODULES_CORE_PATH%/package.json}/android/gradle-plugin"
-              
-              if [ -d "$GRADLE_PLUGIN_PATH" ] && grep -q "classpath" /Users/builder/clone/mobile-app/android/build.gradle; then
-                LAST_CLASSPATH_LINE=$(grep -n "classpath" /Users/builder/clone/mobile-app/android/build.gradle | tail -1 | cut -d: -f1)
-                if [ -n "$LAST_CLASSPATH_LINE" ]; then
-                  printf '        classpath files("%s")\n' "$GRADLE_PLUGIN_PATH" > /tmp/add_classpath_clone.txt
-                  sed -i '' "${LAST_CLASSPATH_LINE}r /tmp/add_classpath_clone.txt" /Users/builder/clone/mobile-app/android/build.gradle
-                  echo "✅ Added plugin to clone directory classpath"
-                fi
+          # Also ensure settings.gradle includes the plugin properly
+          echo "Checking settings.gradle..."
+          for settings_file in "android/settings.gradle" "/Users/builder/clone/mobile-app/android/settings.gradle"; do
+            if [ -f "$settings_file" ]; then
+              echo "Checking: $settings_file"
+              if ! grep -q "expo-modules-core" "$settings_file"; then
+                echo "⚠️ expo-modules-core not found in settings.gradle"
+                echo "This might be normal if expo prebuild didn't add it"
+              else
+                echo "✅ expo-modules-core found in settings.gradle"
               fi
             fi
-          fi
+          done
       - name: Fix Expo Module Plugin Configuration
         script: |
           cd mobile-app
