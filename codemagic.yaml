@@ -76,35 +76,57 @@ workflows:
           cd mobile-app
           echo "🔧 Removing useDefaultAndroidSdkVersions() from all Expo modules..."
           
-          # List all expo modules first
-          ls -d node_modules/expo-*/android 2>/dev/null || echo "No expo modules found"
-          
-          # Find and patch all expo-*/android/build.gradle files using perl
-          find node_modules -path "*/expo-*/android/build.gradle" -type f 2>/dev/null | while read file; do
-            if grep -q "useDefaultAndroidSdkVersions()" "$file"; then
-              echo "Found in: $file"
-              echo "Before:"
-              grep -n "useDefaultAndroidSdkVersions" "$file"
-              
-              # Remove the line using perl (more reliable on macOS)
-              perl -i -pe 's/.*useDefaultAndroidSdkVersions\(\).*\n//g' "$file"
-              
-              echo "After patch - verifying removal:"
-              if grep -q "useDefaultAndroidSdkVersions" "$file"; then
-                echo "⚠️ Still exists, trying alternative method"
-                # Comment it out instead
-                perl -i -pe 's/(.*useDefaultAndroidSdkVersions.*)$/\/\/ $1 \/\/ REMOVED/g' "$file"
+          # Function to patch a file
+          patch_gradle_file() {
+            local file="$1"
+            if [ -f "$file" ]; then
+              if grep -q "useDefaultAndroidSdkVersions()" "$file"; then
+                echo "Patching: $file"
+                echo "  Before:"
+                grep -n "useDefaultAndroidSdkVersions" "$file" || echo "    Not found in grep"
+                
+                # Method 1: Delete the entire line
+                grep -v "useDefaultAndroidSdkVersions()" "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+                
+                echo "  After:"
+                if grep -q "useDefaultAndroidSdkVersions" "$file"; then
+                  echo "    ⚠️ Still exists!"
+                else
+                  echo "    ✅ Removed successfully"
+                fi
+              else
+                echo "  ✓ Already clean: $file"
               fi
-              echo "✅ Patched: $file"
+            else
+              echo "  ⚠️ File not found: $file"
             fi
+          }
+          
+          # Patch each known expo module explicitly
+          echo "Patching known expo modules..."
+          patch_gradle_file "node_modules/expo-camera/android/build.gradle"
+          patch_gradle_file "node_modules/expo-file-system/android/build.gradle"
+          patch_gradle_file "node_modules/expo-location/android/build.gradle"
+          patch_gradle_file "node_modules/expo-sharing/android/build.gradle"
+          patch_gradle_file "node_modules/expo-constants/android/build.gradle"
+          
+          # Also find and patch any others
+          echo ""
+          echo "Searching for any remaining expo modules..."
+          find node_modules -type f -path "*/expo-*/android/build.gradle" | while read file; do
+            patch_gradle_file "$file"
           done
           
-          # Verify no instances remain
-          echo "Verification - checking for remaining instances:"
-          if find node_modules -path "*/expo-*/android/build.gradle" -type f -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null; then
-            echo "⚠️ Warning: Some instances still found"
+          # Final verification
+          echo ""
+          echo "=== Final Verification ==="
+          remaining=$(find node_modules -type f -path "*/expo-*/android/build.gradle" -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$remaining" -gt 0 ]; then
+            echo "❌ ERROR: Still found $remaining files with useDefaultAndroidSdkVersions():"
+            find node_modules -type f -path "*/expo-*/android/build.gradle" -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null
+            exit 1
           else
-            echo "✅ All instances removed successfully"
+            echo "✅ All instances removed successfully!"
           fi
           
       - name: Set Gradle Permissions
