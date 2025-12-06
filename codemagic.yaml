@@ -38,6 +38,49 @@ workflows:
           cd mobile-app
           npx expo prebuild --platform android --clean
           
+      - name: Fix ExpoModulesCorePlugin Gradle Error
+        script: |
+          cd mobile-app
+          PLUGIN_FILE="node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
+          
+          if [ -f "$PLUGIN_FILE" ]; then
+            echo "Patching $PLUGIN_FILE line 76..."
+            
+            # Create a backup
+            cp "$PLUGIN_FILE" "${PLUGIN_FILE}.backup"
+            
+            # Fix line 76 - replace .release with .getByName("release")
+            sed -i.bak 's/components\.release/components.getByName("release")/g' "$PLUGIN_FILE"
+            sed -i.bak 's/components\["release"\]/components.getByName("release")/g' "$PLUGIN_FILE"
+            
+            # Remove backup file created by sed
+            rm -f "${PLUGIN_FILE}.bak"
+            
+            echo "✅ Patched successfully"
+            echo "Showing line 76:"
+            sed -n '76p' "$PLUGIN_FILE"
+          else
+            echo "⚠️ Plugin file not found at $PLUGIN_FILE"
+          fi
+          
+      - name: Patch All Expo Modules
+        script: |
+          cd mobile-app
+          echo "🔧 Removing useDefaultAndroidSdkVersions() from all Expo modules..."
+          
+          # Find all expo-*/android/build.gradle files
+          find node_modules/expo-*/android -name "build.gradle" 2>/dev/null | while read file; do
+            if grep -q "useDefaultAndroidSdkVersions()" "$file"; then
+              echo "Patching: $file"
+              # Remove the line
+              sed -i.bak '/useDefaultAndroidSdkVersions()/d' "$file"
+              rm -f "${file}.bak"
+              echo "✅ Removed useDefaultAndroidSdkVersions() from $file"
+            fi
+          done
+          
+          echo "✅ Finished patching all Expo modules"
+          
       - name: Set Gradle Permissions
         script: |
           cd mobile-app/android
