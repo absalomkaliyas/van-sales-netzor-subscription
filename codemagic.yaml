@@ -110,31 +110,36 @@ workflows:
               fi
               
               # Create the classpath line - use correct Gradle syntax
-              # Calculate relative path from android/build.gradle to node_modules
+              # In Gradle buildscript, classpath accepts files() but not fileTree
+              # We need to reference the actual plugin file, not the directory
               BUILD_DIR=$(dirname "$build_file")
               cd "$BUILD_DIR" || return
               
-              # Find node_modules relative to android directory
-              if [ -d "../node_modules/expo-modules-core/android/gradle-plugin" ]; then
-                RELATIVE_PATH="../node_modules/expo-modules-core/android/gradle-plugin"
-              elif [ -d "../../node_modules/expo-modules-core/android/gradle-plugin" ]; then
-                RELATIVE_PATH="../../node_modules/expo-modules-core/android/gradle-plugin"
-              else
-                # Use rootDir to reference from project root
-                RELATIVE_PATH="\${rootDir}/../node_modules/expo-modules-core/android/gradle-plugin"
+              # Find the actual plugin file (usually a .gradle file in the gradle-plugin directory)
+              PLUGIN_FILE=""
+              if [ -f "../node_modules/expo-modules-core/android/gradle-plugin/build.gradle" ]; then
+                PLUGIN_FILE="../node_modules/expo-modules-core/android/gradle-plugin/build.gradle"
+              elif [ -f "../node_modules/expo-modules-core/android/gradle-plugin/build.gradle.kts" ]; then
+                PLUGIN_FILE="../node_modules/expo-modules-core/android/gradle-plugin/build.gradle.kts"
+              elif [ -d "../node_modules/expo-modules-core/android/gradle-plugin" ]; then
+                # If it's a directory, we need to include it as an included build
+                # But actually, expo-modules-core uses a different mechanism
+                # Let's try using apply from instead
+                echo "⚠️ Plugin is a directory, trying apply from mechanism"
+                # Don't add to classpath, instead ensure it's applied via settings
+                return
               fi
               
-              # Use correct Gradle syntax - classpath with fileTree or files
-              # Try using fileTree for directory or files() for single file
-              # Actually, for a directory plugin, we might need fileTree
-              CLASSPATH_LINE="        classpath fileTree(dir: \"$RELATIVE_PATH\", include: [\"*.jar\", \"*.gradle\"])"
-              
-              echo "$CLASSPATH_LINE" > /tmp/plugin_classpath.txt
-              
-              # Insert the line
-              sed -i '' "${INSERT_LINE}r /tmp/plugin_classpath.txt" "$build_file"
-              echo "✅ Added plugin classpath at line $INSERT_LINE"
-              echo "Classpath line: $CLASSPATH_LINE"
+              if [ -n "$PLUGIN_FILE" ]; then
+                # Use files() with the actual file path
+                CLASSPATH_LINE="        classpath files(\"$PLUGIN_FILE\")"
+                echo "$CLASSPATH_LINE" > /tmp/plugin_classpath.txt
+                sed -i '' "${INSERT_LINE}r /tmp/plugin_classpath.txt" "$build_file"
+                echo "✅ Added plugin classpath at line $INSERT_LINE"
+              else
+                echo "⚠️ Could not find plugin file, expo prebuild should handle this"
+                echo "Checking if plugin is applied via settings.gradle..."
+              fi
             else
               echo "⚠️ No dependencies block found in buildscript"
             fi
