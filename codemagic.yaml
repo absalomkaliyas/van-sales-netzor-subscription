@@ -32,6 +32,8 @@ workflows:
       - name: Prebuild Android (Generate Native Code)
         script: |
           cd mobile-app
+          # Delete old android folder to ensure clean SDK 51 generation
+          rm -rf android
           # Clean prebuild to ensure new Gradle config is generated
           npx expo prebuild --platform android --clean
           
@@ -40,26 +42,23 @@ workflows:
           cd mobile-app/android
           chmod +x gradlew
           
+          
           echo "🚀 Starting Gradle Build (SDK 51 + Gradle 8)..."
           
-          # Clean build with stacktrace and info logging, capturing output
-          ./gradlew assembleRelease --no-daemon --stacktrace --info > build.log 2>&1 || true
+          # Use pipefail to catch build errors through tee
+          set -o pipefail
           
-          # Check for failure string or non-zero exit in log
-          if grep -q "BUILD FAILED" build.log; then
+          if ! ./gradlew assembleRelease --no-daemon --stacktrace --info | tee build.log; then
             echo ""
-            echo "❌ BUILD FAILED! EXTRACTING ERROR..."
+            echo "❌ BUILD FAILED! AUTOMATIC ERROR REPORT:"
             echo "=============================================================================="
-            grep -A 20 "What went wrong:" build.log
+            # Try to find the standard Gradle error block
+            grep -B 2 -A 20 "What went wrong:" build.log || true
             echo "------------------------------------------------------------------------------"
-            grep -A 20 "> Task :.* FAILED" build.log
+            # Try to find specific task failures
+            grep -B 2 -A 5 "FAILED" build.log | grep "Task :" || true
             echo "=============================================================================="
-            echo "Bottom of log:"
-            tail -n 50 build.log
             exit 1
-          else
-            echo "✅ Build Success!"
-            tail -n 20 build.log
           fi
           
     artifacts:
