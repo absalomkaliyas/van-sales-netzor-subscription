@@ -48,6 +48,72 @@ workflows:
             echo "First 30 lines of settings.gradle:"
             head -30 android/settings.gradle
           fi
+          
+      - name: Fix Buildscript Plugin Registration
+        script: |
+          cd mobile-app
+          echo "🔧 Fixing buildscript to include expo-module-gradle-plugin..."
+          
+          if [ -f "android/build.gradle" ]; then
+            echo "Checking build.gradle..."
+            
+            # Check if expo-modules-core gradle plugin is in buildscript dependencies
+            if ! grep -q "expo-modules-core.*gradle-plugin" android/build.gradle; then
+              echo "⚠️ Plugin not found in buildscript, adding it..."
+              
+              # Find the buildscript dependencies block and add the plugin
+              # First, check if there's a dependencies block in buildscript
+              if grep -q "buildscript" android/build.gradle && grep -q "dependencies" android/build.gradle; then
+                # Get the expo-modules-core path
+                EXPO_MODULES_CORE_PATH=$(node -e "console.log(require.resolve('expo-modules-core/package.json'))")
+                GRADLE_PLUGIN_PATH="$EXPO_MODULES_CORE_PATH/../android/gradle-plugin"
+                
+                echo "Expo modules core path: $EXPO_MODULES_CORE_PATH"
+                echo "Gradle plugin path: $GRADLE_PLUGIN_PATH"
+                
+                # Add the plugin to buildscript dependencies
+                # Find the dependencies block and add before the closing brace
+                sed -i '' '/buildscript {/,/dependencies {/{
+                  /dependencies {/a\
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+        classpath files("'"$GRADLE_PLUGIN_PATH"'")
+                }' android/build.gradle || true
+                
+                # Alternative: Add after existing classpath entries
+                if grep -q "classpath" android/build.gradle; then
+                  # Find last classpath line and add after it
+                  sed -i '' '/classpath.*react-native-gradle-plugin/a\
+        classpath files("'"$GRADLE_PLUGIN_PATH"'")' android/build.gradle || true
+                fi
+              fi
+            else
+              echo "✅ Plugin already in buildscript"
+            fi
+            
+            # Also apply the plugin
+            if ! grep -q "apply plugin.*expo-module-gradle-plugin" android/build.gradle; then
+              echo "Adding plugin application..."
+              # Add after buildscript block
+              sed -i '' '/^}/a\
+apply plugin: "expo-module-gradle-plugin"
+' android/build.gradle || true
+            fi
+          fi
+          
+          # Also fix in clone directory
+          if [ -f "/Users/builder/clone/mobile-app/android/build.gradle" ]; then
+            echo "Fixing clone directory build.gradle..."
+            # Same fixes for clone directory
+            if ! grep -q "expo-modules-core.*gradle-plugin" /Users/builder/clone/mobile-app/android/build.gradle; then
+              EXPO_MODULES_CORE_PATH=$(cd /Users/builder/clone/mobile-app && node -e "console.log(require.resolve('expo-modules-core/package.json'))")
+              GRADLE_PLUGIN_PATH="$EXPO_MODULES_CORE_PATH/../android/gradle-plugin"
+              
+              # Add classpath
+              sed -i '' '/classpath.*react-native-gradle-plugin/a\
+        classpath files("'"$GRADLE_PLUGIN_PATH"'")' /Users/builder/clone/mobile-app/android/build.gradle || true
+            fi
+          fi
       - name: Fix Expo Module Plugin Configuration
         script: |
           cd mobile-app
