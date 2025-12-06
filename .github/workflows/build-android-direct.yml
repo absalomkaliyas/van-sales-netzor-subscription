@@ -57,40 +57,42 @@ jobs:
         npx expo prebuild --platform android --clean
         
     - name: Patch Gradle Files
-      working-directory: ./mobile-app
       run: |
-        echo "Searching for expo-asset build.gradle..."
-        find . -name "build.gradle" -path "*/expo-asset/android/*" | head -1 | while read file; do
-          echo "Found: $file"
-          echo "Patching $file..."
-          
-          # Remove useDefaultAndroidSdkVersions() line completely
-          sed -i '/useDefaultAndroidSdkVersions()/d' "$file" || true
-          
-          # Add SDK versions after android { block
-          if ! grep -q "compileSdkVersion" "$file"; then
-            sed -i '/^[[:space:]]*android[[:space:]]*{/a\    compileSdkVersion 34\n    buildToolsVersion "34.0.0"' "$file" || true
-          fi
-          
-          echo "Patched: $file"
-          cat "$file" | grep -A 5 "android {" | head -10
-        done
+        echo "Patching Gradle files - checking all locations..."
         
-        # Also check root node_modules
-        if [ -f "../node_modules/expo-asset/android/build.gradle" ]; then
-          echo "Patching root node_modules expo-asset..."
-          sed -i '/useDefaultAndroidSdkVersions()/d' ../node_modules/expo-asset/android/build.gradle || true
-          if ! grep -q "compileSdkVersion" ../node_modules/expo-asset/android/build.gradle; then
-            sed -i '/^[[:space:]]*android[[:space:]]*{/a\    compileSdkVersion 34\n    buildToolsVersion "34.0.0"' ../node_modules/expo-asset/android/build.gradle || true
+        # Patch root node_modules (where error occurs based on error message)
+        if [ -f "node_modules/expo-asset/android/build.gradle" ]; then
+          echo "✅ Found root node_modules/expo-asset/build.gradle"
+          echo "Removing useDefaultAndroidSdkVersions()..."
+          sed -i '/useDefaultAndroidSdkVersions()/d' node_modules/expo-asset/android/build.gradle
+          echo "✅ Removed useDefaultAndroidSdkVersions()"
+          
+          # Add SDK versions if not present
+          if ! grep -q "compileSdkVersion" node_modules/expo-asset/android/build.gradle; then
+            echo "Adding compileSdkVersion..."
+            sed -i '/android {/a\    compileSdkVersion 34\n    buildToolsVersion "34.0.0"' node_modules/expo-asset/android/build.gradle
+            echo "✅ Added SDK versions"
           fi
+        else
+          echo "⚠️ Root node_modules/expo-asset/build.gradle not found"
+        fi
+        
+        # Also patch mobile-app node_modules
+        if [ -f "mobile-app/node_modules/expo-asset/android/build.gradle" ]; then
+          echo "✅ Found mobile-app/node_modules/expo-asset/build.gradle"
+          sed -i '/useDefaultAndroidSdkVersions()/d' mobile-app/node_modules/expo-asset/android/build.gradle
+          if ! grep -q "compileSdkVersion" mobile-app/node_modules/expo-asset/android/build.gradle; then
+            sed -i '/android {/a\    compileSdkVersion 34\n    buildToolsVersion "34.0.0"' mobile-app/node_modules/expo-asset/android/build.gradle
+          fi
+          echo "✅ Patched mobile-app expo-asset"
         fi
         
         # Ensure gradle.properties exists
-        mkdir -p android
-        if [ ! -f android/gradle.properties ]; then
-          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" > android/gradle.properties
-          echo "android.useAndroidX=true" >> android/gradle.properties
-          echo "android.enableJetifier=true" >> android/gradle.properties
+        mkdir -p mobile-app/android
+        if [ ! -f mobile-app/android/gradle.properties ]; then
+          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" > mobile-app/android/gradle.properties
+          echo "android.useAndroidX=true" >> mobile-app/android/gradle.properties
+          echo "android.enableJetifier=true" >> mobile-app/android/gradle.properties
         fi
 
     - name: Final Gradle Patch Before Build
