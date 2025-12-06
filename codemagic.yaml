@@ -40,30 +40,6 @@ workflows:
           fi
           echo "✅ expo-modules-core verified"
           
-      - name: Final Comprehensive Gradle Patch
-        script: |
-          echo "🔧 Final comprehensive patch - removing useDefaultAndroidSdkVersions() from ALL expo modules..."
-          
-          # Find and patch ALL expo-* modules one more time before build
-          find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
-          
-          if [ -d "mobile-app" ]; then
-            find mobile-app -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
-          fi
-          
-          if [ -d "/Users/builder/clone" ]; then
-            find /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
-          fi
-          
-          # Verify - count remaining instances
-          remaining=$(find . mobile-app /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null | wc -l | tr -d ' ')
-          if [ "$remaining" -gt 0 ]; then
-            echo "⚠️ Warning: Still found $remaining files with useDefaultAndroidSdkVersions()"
-            echo "Trying alternative method - commenting out..."
-            find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' {} \;
-          else
-            echo "✅ Verified: All useDefaultAndroidSdkVersions() removed"
-          fi
       - name: Patch ALL Expo Modules Gradle Files
         script: |
           echo "🔧 Patching ALL Expo modules to remove useDefaultAndroidSdkVersions()..."
@@ -116,6 +92,38 @@ workflows:
           done
           
           echo "✅ Finished patching all Expo modules"
+          
+      - name: Final Comprehensive Gradle Patch Before Build
+        script: |
+          echo "🔧 Final comprehensive patch - removing useDefaultAndroidSdkVersions() from ALL expo modules..."
+          
+          # Find and patch ALL expo-* modules one more time before build
+          find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
+          
+          if [ -d "mobile-app" ]; then
+            find mobile-app -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
+          fi
+          
+          if [ -d "/Users/builder/clone" ]; then
+            find /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
+          fi
+          
+          # Verify - count remaining instances
+          remaining=$(find . mobile-app /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$remaining" -gt 0 ]; then
+            echo "⚠️ Warning: Still found $remaining files with useDefaultAndroidSdkVersions()"
+            echo "Trying alternative method - commenting out..."
+            find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' {} \;
+            if [ -d "mobile-app" ]; then
+              find mobile-app -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' {} \;
+            fi
+            if [ -d "/Users/builder/clone" ]; then
+              find /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' {} \;
+            fi
+          else
+            echo "✅ Verified: All useDefaultAndroidSdkVersions() removed"
+          fi
+          
       - name: Build APK
         script: |
           cd mobile-app/android
