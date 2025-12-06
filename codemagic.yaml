@@ -124,6 +124,33 @@ workflows:
             echo "✅ Verified: All useDefaultAndroidSdkVersions() removed"
           fi
           
+          # Fix expo-module-gradle-plugin issue by ensuring settings.gradle includes expo-modules-core
+          echo "🔧 Ensuring expo-modules-core plugin is properly configured..."
+          if [ -f "mobile-app/android/settings.gradle" ]; then
+            if ! grep -q "expo-modules-core/scripts/autolinking" mobile-app/android/settings.gradle; then
+              echo "Adding expo-modules-core autolinking to mobile-app/android/settings.gradle..."
+              cat >> mobile-app/android/settings.gradle << 'EOF'
+
+// Expo modules autolinking
+apply from: new File(["node", "--print", "require.resolve(\"expo-modules-core/package.json\")"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
+EOF
+              echo "✅ Added expo-modules-core autolinking"
+            fi
+          fi
+          
+          # Also check clone directory
+          if [ -f "/Users/builder/clone/mobile-app/android/settings.gradle" ]; then
+            if ! grep -q "expo-modules-core/scripts/autolinking" /Users/builder/clone/mobile-app/android/settings.gradle; then
+              echo "Adding expo-modules-core autolinking to clone directory..."
+              cat >> /Users/builder/clone/mobile-app/android/settings.gradle << 'EOF'
+
+// Expo modules autolinking
+apply from: new File(["node", "--print", "require.resolve(\"expo-modules-core/package.json\")"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
+EOF
+              echo "✅ Added expo-modules-core autolinking to clone"
+            fi
+          fi
+          
       - name: Build APK
         script: |
           cd mobile-app/android
