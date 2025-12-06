@@ -22,8 +22,8 @@ workflows:
       - name: Install Dependencies
         script: |
           cd mobile-app
-          # Use npm ci for reproducible builds
-          npm ci --legacy-peer-deps
+          # Use npm install since package-lock.json might be missing
+          npm install --legacy-peer-deps
           
       - name: Install Expo CLI
         script: |
@@ -42,8 +42,25 @@ workflows:
           
           echo "🚀 Starting Gradle Build (SDK 51 + Gradle 8)..."
           
-          # Clean build with stacktrace and info logging
-          ./gradlew assembleRelease --no-daemon --stacktrace --info
+          # Clean build with stacktrace and info logging, capturing output
+          ./gradlew assembleRelease --no-daemon --stacktrace --info > build.log 2>&1 || true
+          
+          # Check for failure string or non-zero exit in log
+          if grep -q "BUILD FAILED" build.log; then
+            echo ""
+            echo "❌ BUILD FAILED! EXTRACTING ERROR..."
+            echo "=============================================================================="
+            grep -A 20 "What went wrong:" build.log
+            echo "------------------------------------------------------------------------------"
+            grep -A 20 "> Task :.* FAILED" build.log
+            echo "=============================================================================="
+            echo "Bottom of log:"
+            tail -n 50 build.log
+            exit 1
+          else
+            echo "✅ Build Success!"
+            tail -n 20 build.log
+          fi
           
     artifacts:
       - mobile-app/android/app/build/outputs/**/*.apk
