@@ -35,8 +35,9 @@ module.exports = {
             targetSdkVersion: 34,
             minSdkVersion: 23,
             buildToolsVersion: "34.0.0",
-            // Ensure Java 17 is used
-            javaVersion: "17"
+            // Ensure Java 17 and Kotlin 1.9.23 are used
+            javaVersion: "17",
+            kotlinVersion: "1.9.23"
           }
         }
       ],
