@@ -9,12 +9,12 @@ workflows:
       vars:
         EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL
         EXPO_PUBLIC_SUPABASE_ANON_KEY: $EXPO_PUBLIC_SUPABASE_ANON_KEY
-      node: 18
+      node: 20
     scripts:
       - name: Install dependencies
         script: |
           cd mobile-app
-          npm ci
+          npm install
       - name: Install Expo CLI
         script: |
           npm install -g @expo/cli eas-cli
