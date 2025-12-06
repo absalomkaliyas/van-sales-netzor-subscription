@@ -110,23 +110,35 @@ workflows:
               fi
               
               # Create the classpath line - use correct Gradle syntax
-              # Need to use relative path from build.gradle location
+              # For expo-modules-core, we need to use the gradle-plugin directory
+              # Calculate relative path from android/build.gradle to node_modules
               BUILD_DIR=$(dirname "$build_file")
-              RELATIVE_PATH=$(node -e "
-                const path = require('path');
-                const buildDir = '$BUILD_DIR';
-                const pluginPath = '$GRADLE_PLUGIN_PATH';
-                const relative = path.relative(buildDir, pluginPath);
-                console.log(relative);
-              " 2>/dev/null || echo "../node_modules/expo-modules-core/android/gradle-plugin")
+              cd "$BUILD_DIR" || return
               
-              # Use files() with proper syntax
-              CLASSPATH_LINE="        classpath files(\"$RELATIVE_PATH\")"
+              # Try to find node_modules relative to android directory
+              if [ -d "../node_modules/expo-modules-core/android/gradle-plugin" ]; then
+                RELATIVE_PATH="../node_modules/expo-modules-core/android/gradle-plugin"
+              elif [ -d "../../node_modules/expo-modules-core/android/gradle-plugin" ]; then
+                RELATIVE_PATH="../../node_modules/expo-modules-core/android/gradle-plugin"
+              else
+                # Fallback: use absolute path but convert to project-relative
+                RELATIVE_PATH="file(\"$GRADLE_PLUGIN_PATH\")"
+              fi
+              
+              # Use correct Gradle syntax - classpath with files()
+              # But wrap in file() if it's absolute, or use relative path directly
+              if [[ "$RELATIVE_PATH" == file* ]]; then
+                CLASSPATH_LINE="        classpath $RELATIVE_PATH"
+              else
+                CLASSPATH_LINE="        classpath files(\"$RELATIVE_PATH\")"
+              fi
+              
               echo "$CLASSPATH_LINE" > /tmp/plugin_classpath.txt
               
               # Insert the line
               sed -i '' "${INSERT_LINE}r /tmp/plugin_classpath.txt" "$build_file"
-              echo "✅ Added plugin classpath at line $INSERT_LINE with path: $RELATIVE_PATH"
+              echo "✅ Added plugin classpath at line $INSERT_LINE"
+              echo "Classpath line: $CLASSPATH_LINE"
             else
               echo "⚠️ No dependencies block found in buildscript"
             fi
