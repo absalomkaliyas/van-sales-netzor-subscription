@@ -12,14 +12,26 @@ workflows:
       node: 20
       java: 17
     scripts:
-      - name: Install dependencies
+      - name: Install mobile-app dependencies
         script: |
           cd mobile-app
-          npm ci --legacy-peer-deps
+          # Install dependencies without workspace hoisting
+          npm ci --legacy-peer-deps --no-workspaces
           
       - name: Install Expo CLI
         script: |
           npm install -g @expo/cli@latest eas-cli@latest
+          
+      - name: Verify expo-build-properties installation
+        script: |
+          cd mobile-app
+          # Ensure expo-build-properties is in mobile-app/node_modules
+          if [ ! -d "node_modules/expo-build-properties" ]; then
+            echo "⚠️ expo-build-properties not found, installing..."
+            npm install expo-build-properties@~0.12.5
+          else
+            echo "✅ expo-build-properties found in correct location"
+          fi
           
       - name: Prebuild Android
         script: |
