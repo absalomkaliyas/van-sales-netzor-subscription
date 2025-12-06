@@ -48,7 +48,7 @@ workflows:
             echo "First 30 lines of settings.gradle:"
             head -30 android/settings.gradle
           fi
-      - name: Fix Expo Module Plugin
+      - name: Fix Expo Module Plugin Configuration
         script: |
           cd mobile-app
           # Verify expo-modules-core is installed
@@ -57,6 +57,46 @@ workflows:
             npm install expo-modules-core@~1.11.0
           fi
           echo "✅ expo-modules-core verified"
+          
+          # Fix root build.gradle to include expo-modules-core plugin in buildscript
+          if [ -f "android/build.gradle" ]; then
+            echo "Checking root build.gradle for expo-modules-core plugin..."
+            
+            # Check if buildscript exists
+            if ! grep -q "buildscript" android/build.gradle; then
+              echo "⚠️ No buildscript found in root build.gradle"
+            else
+              # Check if expo-modules-core is in dependencies
+              if ! grep -q "expo-modules-core" android/build.gradle; then
+                echo "⚠️ expo-modules-core not found in buildscript dependencies"
+                echo "This might be normal - expo prebuild should handle it"
+              else
+                echo "✅ expo-modules-core found in buildscript"
+              fi
+            fi
+          fi
+          
+          # Fix ExpoModulesCorePlugin.gradle to remove release property error
+          echo "Fixing ExpoModulesCorePlugin.gradle release property issue..."
+          plugin_file="node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
+          if [ -f "$plugin_file" ]; then
+            # Check if the problematic line exists
+            if grep -q "components.release" "$plugin_file"; then
+              echo "Found components.release - this might cause the error"
+              # Try to comment it out or fix it
+              sed -i '' 's/components\.release/components.getByName("release")/g' "$plugin_file" || true
+              echo "✅ Attempted to fix release property"
+            fi
+          fi
+          
+          # Also check clone directory
+          clone_plugin="/Users/builder/clone/mobile-app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
+          if [ -f "$clone_plugin" ]; then
+            if grep -q "components.release" "$clone_plugin"; then
+              sed -i '' 's/components\.release/components.getByName("release")/g' "$clone_plugin" || true
+              echo "✅ Fixed clone directory plugin"
+            fi
+          fi
           
       - name: Patch ALL Expo Modules Gradle Files
         script: |
