@@ -37,15 +37,17 @@ Follow these steps to build your Android APK using Codemagic (FREE & EASY).
 ### Add First Variable:
 - **Variable name**: `EXPO_PUBLIC_SUPABASE_URL`
 - **Variable value**: `https://lhledsnjzovhamddrjas.supabase.co`
-- **Group**: Create new group called `expo_secrets` (or leave default)
+- **Group**: Click "Create new group" and name it `expo_secrets` (or you can use the default group)
 - **Click**: "Add"
 
 ### Add Second Variable:
 - **Click**: "Add variable" again
 - **Variable name**: `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 - **Variable value**: (Your Supabase anon key - get it from Supabase dashboard)
-- **Group**: Same group as above (`expo_secrets`)
+- **Group**: Select the same group you created above (`expo_secrets`) or use default
 - **Click**: "Add"
+
+**Note**: The group name doesn't matter for the build to work - you can use the default group or create a new one. Both variables just need to be added.
 
 **✅ Environment variables are set!**
 
