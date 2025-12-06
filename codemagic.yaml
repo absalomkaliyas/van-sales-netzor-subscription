@@ -158,13 +158,205 @@ workflows:
           
       - name: Set Gradle Permissions
         script: |
+workflows:
+  android-workflow:
+    name: Android Build
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    environment:
+      groups:
+        - expo_secrets
+      vars:
+        EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL
+        EXPO_PUBLIC_SUPABASE_ANON_KEY: $EXPO_PUBLIC_SUPABASE_ANON_KEY
+      node: 20
+      java: 17
+    scripts:
+      - name: Install mobile-app dependencies
+        script: |
+          cd mobile-app
+          # Install dependencies without workspace hoisting
+          npm install --legacy-peer-deps
+          
+      - name: Verify and Fix Dependencies
+        script: |
+          cd mobile-app
+          echo "=== Verifying critical dependencies ==="
+          
+          # Check if expo-modules-core exists
+          if [ ! -d "node_modules/expo-modules-core" ]; then
+            echo "⚠️ expo-modules-core missing! Installing explicitly..."
+            npm install expo-modules-core@~1.11.0 --legacy-peer-deps --save
+          else
+            echo "✅ expo-modules-core found"
+          fi
+          
+          # List what's in node_modules/expo-*
+          echo ""
+          echo "Installed Expo packages:"
+          ls -d node_modules/expo-* 2>/dev/null | head -20 || echo "No expo packages found"
+          
+          # Verify critical packages
+          for pkg in expo expo-modules-core expo-camera expo-constants; do
+            if [ -d "node_modules/$pkg" ]; then
+              echo "  ✅ $pkg"
+            else
+              echo "  ❌ $pkg - MISSING!"
+            fi
+          done
+          
+      - name: Install Expo CLI
+        script: |
+          npm install -g @expo/cli@latest eas-cli@latest
+          
+      - name: Verify expo-build-properties installation
+        script: |
+          cd mobile-app
+          # Ensure expo-build-properties is in mobile-app/node_modules
+          if [ ! -d "node_modules/expo-build-properties" ]; then
+            echo "⚠️ expo-build-properties not found, installing..."
+            npm install expo-build-properties@~0.12.5
+          else
+            echo "✅ expo-build-properties found in correct location"
+          fi
+          
+      - name: Prebuild Android
+        script: |
+          cd mobile-app
+          npx expo prebuild --platform android --clean
+          
+      - name: Fix ExpoModulesCorePlugin Gradle Error
+        script: |
+          cd mobile-app
+          
+          # Debug: Show what's in expo-modules-core
+          echo "Checking expo-modules-core installation..."
+          if [ -d "node_modules/expo-modules-core" ]; then
+            echo "✅ expo-modules-core found"
+            echo "Contents of android directory:"
+            ls -la node_modules/expo-modules-core/android/ 2>/dev/null || echo "android directory not found"
+          else
+            echo "⚠️ expo-modules-core not found in node_modules"
+          fi
+          
+          PLUGIN_FILE="node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
+          
+          if [ -f "$PLUGIN_FILE" ]; then
+            echo "Patching $PLUGIN_FILE line 76..."
+            echo "Original line 76:"
+            sed -n '76p' "$PLUGIN_FILE"
+            
+            # Use perl for more reliable replacement on macOS
+            perl -i -pe 's/components\.release/components.getByName("release")/g' "$PLUGIN_FILE"
+            perl -i -pe 's/components\["release"\]/components.getByName("release")/g' "$PLUGIN_FILE"
+            
+            echo "After patching line 76:"
+            sed -n '76p' "$PLUGIN_FILE"
+            echo "✅ Patched successfully"
+          else
+            echo "⚠️ Plugin file not found - skipping patch"
+            echo "This is OK if expo-build-properties handles SDK versions correctly"
+          fi
+          
+      - name: Patch All Expo Modules
+        script: |
+          cd mobile-app
+          echo "🔧 Removing useDefaultAndroidSdkVersions() from all Expo modules..."
+          
+          # Function to patch a file
+          patch_gradle_file() {
+            local file="$1"
+            if [ -f "$file" ]; then
+              if grep -q "useDefaultAndroidSdkVersions()" "$file"; then
+                echo "Patching: $file"
+                echo "  Before:"
+                grep -n "useDefaultAndroidSdkVersions" "$file" || echo "    Not found in grep"
+                
+                # Method 1: Delete the entire line
+                grep -v "useDefaultAndroidSdkVersions()" "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+                
+                echo "  After:"
+                if grep -q "useDefaultAndroidSdkVersions" "$file"; then
+                  echo "    ⚠️ Still exists!"
+                else
+                  echo "    ✅ Removed successfully"
+                fi
+              else
+                echo "  ✓ Already clean: $file"
+              fi
+            else
+              echo "  ⚠️ File not found: $file"
+            fi
+          }
+          
+          # Patch each known expo module explicitly
+          echo "Patching known expo modules..."
+          patch_gradle_file "node_modules/expo-camera/android/build.gradle"
+          patch_gradle_file "node_modules/expo-file-system/android/build.gradle"
+          patch_gradle_file "node_modules/expo-location/android/build.gradle"
+          patch_gradle_file "node_modules/expo-sharing/android/build.gradle"
+          patch_gradle_file "node_modules/expo-constants/android/build.gradle"
+          
+          # Also find and patch any others
+          echo ""
+          echo "Searching for any remaining expo modules..."
+          find node_modules -type f -path "*/expo-*/android/build.gradle" | while read file; do
+            patch_gradle_file "$file"
+          done
+          
+          # Final verification
+          echo ""
+          echo "=== Final Verification ==="
+          remaining=$(find node_modules -type f -path "*/expo-*/android/build.gradle" -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$remaining" -gt 0 ]; then
+            echo "❌ ERROR: Still found $remaining files with useDefaultAndroidSdkVersions():"
+            find node_modules -type f -path "*/expo-*/android/build.gradle" -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null
+            exit 1
+          else
+            echo "✅ All instances removed successfully!"
+          fi
+          
+      - name: Set Gradle Permissions
+        script: |
           cd mobile-app/android
           chmod +x gradlew
           
       - name: Build APK
         script: |
           cd mobile-app/android
-          ./gradlew assembleRelease --stacktrace --info
+          chmod +x gradlew
+          
+          echo "🚀 Starting Gradle Build..."
+          # Run build and pipe to log file while also showing in console
+          ./gradlew assembleRelease --stacktrace --info | tee build.log
+          
+          EXIT_CODE=${PIPESTATUS[0]}
+          
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo ""
+            echo "=============================================================================="
+            echo "❌ BUILD FAILED! SHOWING ERROR DETAILS FOR DEBUGGING"
+            echo "=============================================================================="
+            echo ""
+            
+            # Find the "What went wrong" section and print it
+            if grep -q "What went wrong:" build.log; then
+              echo "🔎 FOUND ERROR MESSAGE:"
+              # Print from "What went wrong" and the next 20 lines
+              grep -A 20 "What went wrong:" build.log
+            else
+              echo "🔎 COULD NOT FIND 'What went wrong'. SEARCHING FOR 'FAILURE':"
+              grep -A 20 "FAILURE:" build.log
+            fi
+            
+            echo ""
+            echo "=============================================================================="
+            echo "END OF ERROR DETAILS"
+            echo "=============================================================================="
+            exit $EXIT_CODE
+          else
+            echo "✅ Build Successful!"
+          fi
           
     artifacts:
       - mobile-app/android/app/build/outputs/**/*.apk
