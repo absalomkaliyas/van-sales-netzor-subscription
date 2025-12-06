@@ -44,26 +44,28 @@ workflows:
           
           echo "🚀 Starting Gradle Build (SDK 51 + Gradle 8)..."
           
-          # Use pipefail to catch build errors through tee
-          set -o pipefail
+          # Capture both stdout and stderr to log file
+          ./gradlew assembleRelease --no-daemon --stacktrace --info > build.log 2>&1
+          BUILD_EXIT_CODE=$?
           
-          if ! ./gradlew assembleRelease --no-daemon --stacktrace --info | tee build.log; then
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
             echo ""
             echo "❌ BUILD FAILED! AUTOMATIC ERROR REPORT:"
             echo "=============================================================================="
+            echo "Build exit code: $BUILD_EXIT_CODE"
+            echo "Log file size: $(wc -c < build.log) bytes"
+            echo "Log file lines: $(wc -l < build.log) lines"
+            echo ""
             
-            # Try to find the standard Gradle error block
-            if grep -q "What went wrong:" build.log; then
-              echo "Found 'What went wrong' section:"
-              grep -B 2 -A 20 "What went wrong:" build.log
-            else
-              echo "No 'What went wrong' found. Showing last 100 lines of log:"
-              tail -n 100 build.log
-            fi
+            # Always show the last 150 lines
+            echo "Last 150 lines of build output:"
+            tail -n 150 build.log
             
             echo "=============================================================================="
             exit 1
           fi
+          
+          echo "✅ Build succeeded!"
           
     artifacts:
       - mobile-app/android/app/build/outputs/**/*.apk
