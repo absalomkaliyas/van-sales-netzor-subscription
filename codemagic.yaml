@@ -110,28 +110,24 @@ workflows:
               fi
               
               # Create the classpath line - use correct Gradle syntax
-              # For expo-modules-core, we need to use the gradle-plugin directory
               # Calculate relative path from android/build.gradle to node_modules
               BUILD_DIR=$(dirname "$build_file")
               cd "$BUILD_DIR" || return
               
-              # Try to find node_modules relative to android directory
+              # Find node_modules relative to android directory
               if [ -d "../node_modules/expo-modules-core/android/gradle-plugin" ]; then
                 RELATIVE_PATH="../node_modules/expo-modules-core/android/gradle-plugin"
               elif [ -d "../../node_modules/expo-modules-core/android/gradle-plugin" ]; then
                 RELATIVE_PATH="../../node_modules/expo-modules-core/android/gradle-plugin"
               else
-                # Fallback: use absolute path but convert to project-relative
-                RELATIVE_PATH="file(\"$GRADLE_PLUGIN_PATH\")"
+                # Use rootDir to reference from project root
+                RELATIVE_PATH="\${rootDir}/../node_modules/expo-modules-core/android/gradle-plugin"
               fi
               
-              # Use correct Gradle syntax - classpath with files()
-              # But wrap in file() if it's absolute, or use relative path directly
-              if [[ "$RELATIVE_PATH" == file* ]]; then
-                CLASSPATH_LINE="        classpath $RELATIVE_PATH"
-              else
-                CLASSPATH_LINE="        classpath files(\"$RELATIVE_PATH\")"
-              fi
+              # Use correct Gradle syntax - classpath with fileTree or files
+              # Try using fileTree for directory or files() for single file
+              # Actually, for a directory plugin, we might need fileTree
+              CLASSPATH_LINE="        classpath fileTree(dir: \"$RELATIVE_PATH\", include: [\"*.jar\", \"*.gradle\"])"
               
               echo "$CLASSPATH_LINE" > /tmp/plugin_classpath.txt
               
