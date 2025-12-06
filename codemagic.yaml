@@ -109,13 +109,24 @@ workflows:
                 fi
               fi
               
-              # Create the classpath line
-              CLASSPATH_LINE="        classpath files(\"$GRADLE_PLUGIN_PATH\")"
+              # Create the classpath line - use correct Gradle syntax
+              # Need to use relative path from build.gradle location
+              BUILD_DIR=$(dirname "$build_file")
+              RELATIVE_PATH=$(node -e "
+                const path = require('path');
+                const buildDir = '$BUILD_DIR';
+                const pluginPath = '$GRADLE_PLUGIN_PATH';
+                const relative = path.relative(buildDir, pluginPath);
+                console.log(relative);
+              " 2>/dev/null || echo "../node_modules/expo-modules-core/android/gradle-plugin")
+              
+              # Use files() with proper syntax
+              CLASSPATH_LINE="        classpath files(\"$RELATIVE_PATH\")"
               echo "$CLASSPATH_LINE" > /tmp/plugin_classpath.txt
               
               # Insert the line
               sed -i '' "${INSERT_LINE}r /tmp/plugin_classpath.txt" "$build_file"
-              echo "✅ Added plugin classpath at line $INSERT_LINE"
+              echo "✅ Added plugin classpath at line $INSERT_LINE with path: $RELATIVE_PATH"
             else
               echo "⚠️ No dependencies block found in buildscript"
             fi
