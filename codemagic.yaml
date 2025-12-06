@@ -18,6 +18,33 @@ workflows:
           # Install dependencies without workspace hoisting
           npm install --legacy-peer-deps
           
+      - name: Verify and Fix Dependencies
+        script: |
+          cd mobile-app
+          echo "=== Verifying critical dependencies ==="
+          
+          # Check if expo-modules-core exists
+          if [ ! -d "node_modules/expo-modules-core" ]; then
+            echo "⚠️ expo-modules-core missing! Installing explicitly..."
+            npm install expo-modules-core@~1.11.0 --legacy-peer-deps --save
+          else
+            echo "✅ expo-modules-core found"
+          fi
+          
+          # List what's in node_modules/expo-*
+          echo ""
+          echo "Installed Expo packages:"
+          ls -d node_modules/expo-* 2>/dev/null | head -20 || echo "No expo packages found"
+          
+          # Verify critical packages
+          for pkg in expo expo-modules-core expo-camera expo-constants; do
+            if [ -d "node_modules/$pkg" ]; then
+              echo "  ✅ $pkg"
+            else
+              echo "  ❌ $pkg - MISSING!"
+            fi
+          done
+          
       - name: Install Expo CLI
         script: |
           npm install -g @expo/cli@latest eas-cli@latest
