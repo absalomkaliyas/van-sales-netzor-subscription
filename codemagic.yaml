@@ -40,71 +40,82 @@ workflows:
           fi
           echo "✅ expo-modules-core verified"
           
-      - name: Final Gradle Patch Before Build
+      - name: Final Comprehensive Gradle Patch
         script: |
-          echo "Final patching before build..."
+          echo "🔧 Final comprehensive patch - removing useDefaultAndroidSdkVersions() from ALL expo modules..."
           
-          # Patch all locations where expo-asset might be
-          for path in "node_modules/expo-asset/android/build.gradle" \
-                      "mobile-app/node_modules/expo-asset/android/build.gradle" \
-                      "/Users/builder/clone/node_modules/expo-asset/android/build.gradle"; do
-            if [ -f "$path" ]; then
-              echo "Removing useDefaultAndroidSdkVersions() from: $path"
-              sed -i '' '/useDefaultAndroidSdkVersions()/d' "$path"
-              echo "✅ Patched: $path"
+          # Find and patch ALL expo-* modules one more time before build
+          find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
+          
+          if [ -d "mobile-app" ]; then
+            find mobile-app -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
+          fi
+          
+          if [ -d "/Users/builder/clone" ]; then
+            find /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' '/useDefaultAndroidSdkVersions()/d' {} \;
+          fi
+          
+          # Verify - count remaining instances
+          remaining=$(find . mobile-app /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$remaining" -gt 0 ]; then
+            echo "⚠️ Warning: Still found $remaining files with useDefaultAndroidSdkVersions()"
+            echo "Trying alternative method - commenting out..."
+            find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null -exec sed -i '' 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' {} \;
+          else
+            echo "✅ Verified: All useDefaultAndroidSdkVersions() removed"
+          fi
+      - name: Patch ALL Expo Modules Gradle Files
+        script: |
+          echo "🔧 Patching ALL Expo modules to remove useDefaultAndroidSdkVersions()..."
+          
+          # Function to patch a file
+          patch_file() {
+            local file="$1"
+            if [ -f "$file" ]; then
+              echo "Patching: $file"
+              # Remove the problematic line
+              sed -i '' '/useDefaultAndroidSdkVersions()/d' "$file"
+              # Add SDK versions if missing
+              if ! grep -q "compileSdkVersion" "$file"; then
+                sed -i '' '/android {/a\
+          compileSdkVersion 34\
+          buildToolsVersion "34.0.0"' "$file"
+              fi
+              echo "✅ Patched: $file"
             fi
+          }
+          
+          # Find and patch ALL expo-* modules in all locations
+          echo "Searching for all expo modules..."
+          
+          # Search in current directory
+          find . -type f -path "*/expo-*/android/build.gradle" 2>/dev/null | while read file; do
+            patch_file "$file"
           done
           
-          # Verify patch worked
-          if [ -f "node_modules/expo-asset/android/build.gradle" ]; then
-            if grep -q "useDefaultAndroidSdkVersions" node_modules/expo-asset/android/build.gradle; then
-              echo "⚠️ Warning: useDefaultAndroidSdkVersions still found, trying alternative..."
-              # Alternative: comment it out
-              sed -i '' 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' node_modules/expo-asset/android/build.gradle
-            else
-              echo "✅ Verified: useDefaultAndroidSdkVersions removed"
-            fi
-          fi
-      - name: Patch Gradle Files
-        script: |
-          echo "Patching Gradle files..."
-          
-          # Patch root node_modules (where error occurs)
-          if [ -f "node_modules/expo-asset/android/build.gradle" ]; then
-            echo "Patching root node_modules/expo-asset/build.gradle..."
-            sed -i '' '/useDefaultAndroidSdkVersions()/d' node_modules/expo-asset/android/build.gradle
-            if ! grep -q "compileSdkVersion" node_modules/expo-asset/android/build.gradle; then
-              sed -i '' '/android {/a\
-          compileSdkVersion 34\
-          buildToolsVersion "34.0.0"' node_modules/expo-asset/android/build.gradle
-            fi
-            echo "✅ Patched root expo-asset"
+          # Search in mobile-app
+          if [ -d "mobile-app" ]; then
+            find mobile-app -type f -path "*/expo-*/android/build.gradle" 2>/dev/null | while read file; do
+              patch_file "$file"
+            done
           fi
           
-          # Patch mobile-app node_modules
-          if [ -f "mobile-app/node_modules/expo-asset/android/build.gradle" ]; then
-            echo "Patching mobile-app/node_modules/expo-asset/build.gradle..."
-            sed -i '' '/useDefaultAndroidSdkVersions()/d' mobile-app/node_modules/expo-asset/android/build.gradle
-            if ! grep -q "compileSdkVersion" mobile-app/node_modules/expo-asset/android/build.gradle; then
-              sed -i '' '/android {/a\
-          compileSdkVersion 34\
-          buildToolsVersion "34.0.0"' mobile-app/node_modules/expo-asset/android/build.gradle
-            fi
-            echo "✅ Patched mobile-app expo-asset"
+          # Search in clone directory (Codemagic's working directory)
+          if [ -d "/Users/builder/clone" ]; then
+            find /Users/builder/clone -type f -path "*/expo-*/android/build.gradle" 2>/dev/null | while read file; do
+              patch_file "$file"
+            done
           fi
           
-          # Also check in clone directory (Codemagic's working directory)
-          if [ -f "/Users/builder/clone/node_modules/expo-asset/android/build.gradle" ]; then
-            echo "Patching Codemagic clone directory..."
-            sed -i '' '/useDefaultAndroidSdkVersions()/d' /Users/builder/clone/node_modules/expo-asset/android/build.gradle
-            echo "✅ Patched clone directory expo-asset"
-          fi
-          
-          # Find and patch all expo-asset build.gradle files
-          find . -name "build.gradle" -path "*/expo-asset/android/*" 2>/dev/null | while read file; do
-            echo "Patching: $file"
-            sed -i '' '/useDefaultAndroidSdkVersions()/d' "$file"
+          # Also check common problematic modules explicitly
+          for module in expo-asset expo-file-system expo-camera expo-location expo-sharing expo-constants; do
+            for base in "." "mobile-app" "/Users/builder/clone"; do
+              file="$base/node_modules/$module/android/build.gradle"
+              patch_file "$file"
+            done
           done
+          
+          echo "✅ Finished patching all Expo modules"
       - name: Build APK
         script: |
           cd mobile-app/android
