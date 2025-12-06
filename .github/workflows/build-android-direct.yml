@@ -93,30 +93,26 @@ jobs:
           echo "android.enableJetifier=true" >> android/gradle.properties
         fi
 
-    - name: Patch Gradle Files Before Build
-      working-directory: ./mobile-app
+    - name: Final Gradle Patch Before Build
       run: |
-        echo "Final patching before build..."
-        # Find and patch all expo-asset build.gradle files
-        find . -type f -path "*/expo-asset/android/build.gradle" -exec sh -c '
-          echo "Patching: $1"
-          # Remove the problematic line
-          sed -i "/useDefaultAndroidSdkVersions()/d" "$1"
-          # Add SDK versions if missing
-          if ! grep -q "compileSdkVersion" "$1"; then
-            sed -i "/android {/a\    compileSdkVersion 34\n    buildToolsVersion \"34.0.0\"" "$1"
-          fi
-        ' _ {} \;
+        echo "Final patching before build - checking all locations..."
         
-        # Also check if there's a root node_modules
-        if [ -d "../node_modules/expo-asset" ]; then
-          echo "Patching root node_modules..."
-          find ../node_modules -type f -path "*/expo-asset/android/build.gradle" -exec sh -c '
-            sed -i "/useDefaultAndroidSdkVersions()/d" "$1"
-            if ! grep -q "compileSdkVersion" "$1"; then
-              sed -i "/android {/a\    compileSdkVersion 34\n    buildToolsVersion \"34.0.0\"" "$1"
-            fi
-          ' _ {} \;
+        # Patch root node_modules (most likely location)
+        if [ -f "node_modules/expo-asset/android/build.gradle" ]; then
+          echo "Final patch: root node_modules/expo-asset/build.gradle"
+          sed -i '/useDefaultAndroidSdkVersions()/d' node_modules/expo-asset/android/build.gradle
+          echo "✅ Removed useDefaultAndroidSdkVersions()"
+        fi
+        
+        # Verify patch
+        if [ -f "node_modules/expo-asset/android/build.gradle" ]; then
+          if grep -q "useDefaultAndroidSdkVersions" node_modules/expo-asset/android/build.gradle; then
+            echo "⚠️ Warning: useDefaultAndroidSdkVersions still found, trying alternative method..."
+            # Alternative: comment it out
+            sed -i 's/useDefaultAndroidSdkVersions()/\/\/ useDefaultAndroidSdkVersions() - removed/g' node_modules/expo-asset/android/build.gradle
+          else
+            echo "✅ Verified: useDefaultAndroidSdkVersions removed"
+          fi
         fi
 
     - name: Build APK
