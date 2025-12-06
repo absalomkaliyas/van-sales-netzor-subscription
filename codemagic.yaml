@@ -49,7 +49,24 @@ workflows:
             head -30 android/settings.gradle
           fi
           
-      - name: Fix Buildscript Plugin Registration - Comprehensive
+      - name: Remove Incorrect Plugin Registration
+        script: |
+          cd mobile-app
+          echo "🔧 Removing any incorrectly added plugin classpath entries..."
+          
+          # Remove any classpath entries we might have added incorrectly
+          for build_file in "android/build.gradle" "/Users/builder/clone/mobile-app/android/build.gradle"; do
+            if [ -f "$build_file" ]; then
+              echo "Cleaning: $build_file"
+              # Remove any classpath entries with expo-modules-core or fileTree/file references we added
+              sed -i '' '/classpath.*expo-modules-core/d' "$build_file" || true
+              sed -i '' '/classpath.*fileTree.*gradle-plugin/d' "$build_file" || true
+              sed -i '' '/classpath.*files.*gradle-plugin/d' "$build_file" || true
+              echo "✅ Cleaned up incorrect classpath entries"
+            fi
+          done
+          
+      - name: Verify Expo Prebuild Configuration
         script: |
           cd mobile-app
           echo "🔧 Comprehensive fix for expo-module-gradle-plugin registration..."
