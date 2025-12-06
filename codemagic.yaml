@@ -217,6 +217,21 @@ workflows:
           # If it's missing, it means expo-modules-core wasn't properly installed
           echo "✅ expo prebuild should have configured autolinking automatically"
           
+          # Fix release property in ExpoModulesCorePlugin.gradle
+          echo "🔧 Fixing release property error in ExpoModulesCorePlugin.gradle..."
+          for plugin_file in "mobile-app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle" \
+                             "/Users/builder/clone/mobile-app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"; do
+            if [ -f "$plugin_file" ]; then
+              echo "Fixing: $plugin_file"
+              # Replace components.release with components.getByName("release")
+              sed -i '' 's/components\.release/components.getByName("release")/g' "$plugin_file" || true
+              sed -i '' 's/components\["release"\]/components.getByName("release")/g' "$plugin_file" || true
+              # Also try to comment out if it's causing issues
+              sed -i '' 's/^\([[:space:]]*\)components\.release/\1\/\/ components.release - fixed/g' "$plugin_file" || true
+              echo "✅ Fixed release property in plugin file"
+            fi
+          done
+          
       - name: Build APK
         script: |
           cd mobile-app/android
