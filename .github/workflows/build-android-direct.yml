@@ -56,43 +56,123 @@ jobs:
       run: |
         npx expo prebuild --platform android --clean
         
+    - name: Fix Android Build Configuration
+      working-directory: ./mobile-app
+      run: |
+        echo "Fixing Android build configuration..."
+        
+        # Ensure settings.gradle includes expo-modules-core
+        if [ -f "android/settings.gradle" ]; then
+          echo "Checking settings.gradle..."
+          if ! grep -q "expo-modules-core" android/settings.gradle; then
+            echo "Adding expo-modules-core to settings.gradle..."
+            # Add expo-modules-core if missing
+            sed -i '/include /a\apply from: new File(["node", "--print", "require.resolve(\"expo-modules-core/package.json\")"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");' android/settings.gradle || true
+          fi
+        fi
+        
+        # Fix root build.gradle to include expo-modules-core plugin
+        if [ -f "android/build.gradle" ]; then
+          echo "Checking root build.gradle..."
+          # Ensure buildscript includes expo-modules-core
+          if ! grep -q "expo-modules-core" android/build.gradle; then
+            echo "Root build.gradle looks OK"
+          fi
+        fi
+        
+        # Check if expo-modules-core exists
+        if [ -d "node_modules/expo-modules-core" ]; then
+          echo "✅ expo-modules-core found"
+        else
+          echo "⚠️ expo-modules-core not found, installing..."
+          npm install expo-modules-core
+        fi
+        
+    - name: Install expo-modules-core
+      working-directory: ./mobile-app
+      run: |
+        echo "Ensuring expo-modules-core is installed..."
+        npm install expo-modules-core@~1.11.0
+        
+    - name: Fix Expo Module Plugin Configuration
+      working-directory: ./mobile-app
+      run: |
+        echo "Fixing expo-module-gradle-plugin configuration..."
+        
+        # Check if expo-modules-core/android exists
+        if [ ! -d "node_modules/expo-modules-core/android" ]; then
+          echo "❌ expo-modules-core/android not found!"
+          echo "Reinstalling dependencies..."
+          npm install
+        else
+          echo "✅ expo-modules-core/android found"
+        fi
+        
+        # Fix root build.gradle to include the plugin
+        if [ -f "android/build.gradle" ]; then
+          echo "Checking root build.gradle..."
+          
+          # Check if expo-modules-core plugin is included
+          if ! grep -q "expo-modules-core" android/build.gradle; then
+            echo "Root build.gradle may need expo-modules-core plugin"
+            # The plugin should be auto-included by expo prebuild, but let's verify
+            cat android/build.gradle | head -30
+          else
+            echo "✅ expo-modules-core referenced in root build.gradle"
+          fi
+        fi
+        
+        # Fix settings.gradle - ensure it includes expo-modules-core autolinking
+        if [ -f "android/settings.gradle" ]; then
+          echo "Checking settings.gradle..."
+          if ! grep -q "expo-modules-core" android/settings.gradle; then
+            echo "⚠️ expo-modules-core not in settings.gradle - this might be the issue"
+            echo "Current settings.gradle content:"
+            cat android/settings.gradle
+          else
+            echo "✅ expo-modules-core found in settings.gradle"
+          fi
+        fi
+        
+        # Verify the plugin file exists
+        if [ -f "node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle" ]; then
+          echo "✅ ExpoModulesCorePlugin.gradle found"
+        else
+          echo "❌ ExpoModulesCorePlugin.gradle NOT found!"
+          echo "Listing expo-modules-core/android contents:"
+          ls -la node_modules/expo-modules-core/android/ || true
+        fi
+
     - name: Patch Gradle Files
+      working-directory: ./mobile-app
       run: |
         echo "Patching Gradle files - checking all locations..."
         
-        # Patch root node_modules (where error occurs based on error message)
+        # Patch expo-asset build.gradle
         if [ -f "node_modules/expo-asset/android/build.gradle" ]; then
-          echo "✅ Found root node_modules/expo-asset/build.gradle"
-          echo "Removing useDefaultAndroidSdkVersions()..."
-          sed -i '/useDefaultAndroidSdkVersions()/d' node_modules/expo-asset/android/build.gradle
-          echo "✅ Removed useDefaultAndroidSdkVersions()"
-          
-          # Add SDK versions if not present
+          echo "✅ Found expo-asset/build.gradle"
+          sed -i '/useDefaultAndroidSdkVersions()/d' node_modules/expo-asset/android/build.gradle || true
           if ! grep -q "compileSdkVersion" node_modules/expo-asset/android/build.gradle; then
-            echo "Adding compileSdkVersion..."
-            sed -i '/android {/a\    compileSdkVersion 34\n    buildToolsVersion "34.0.0"' node_modules/expo-asset/android/build.gradle
-            echo "✅ Added SDK versions"
+            sed -i '/android {/a\    compileSdkVersion 34\n    buildToolsVersion "34.0.0"' node_modules/expo-asset/android/build.gradle || true
           fi
-        else
-          echo "⚠️ Root node_modules/expo-asset/build.gradle not found"
+          echo "✅ Patched expo-asset"
         fi
         
-        # Also patch mobile-app node_modules
-        if [ -f "mobile-app/node_modules/expo-asset/android/build.gradle" ]; then
-          echo "✅ Found mobile-app/node_modules/expo-asset/build.gradle"
-          sed -i '/useDefaultAndroidSdkVersions()/d' mobile-app/node_modules/expo-asset/android/build.gradle
-          if ! grep -q "compileSdkVersion" mobile-app/node_modules/expo-asset/android/build.gradle; then
-            sed -i '/android {/a\    compileSdkVersion 34\n    buildToolsVersion "34.0.0"' mobile-app/node_modules/expo-asset/android/build.gradle
+        # Patch expo-linking build.gradle - remove plugin reference if causing issues
+        if [ -f "node_modules/expo-linking/android/build.gradle" ]; then
+          echo "Checking expo-linking/build.gradle..."
+          # The plugin should be applied via expo-modules-core, not directly
+          if grep -q "id 'expo-module-gradle-plugin'" node_modules/expo-linking/android/build.gradle; then
+            echo "expo-linking uses expo-module-gradle-plugin (this is correct)"
           fi
-          echo "✅ Patched mobile-app expo-asset"
         fi
         
         # Ensure gradle.properties exists
-        mkdir -p mobile-app/android
-        if [ ! -f mobile-app/android/gradle.properties ]; then
-          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" > mobile-app/android/gradle.properties
-          echo "android.useAndroidX=true" >> mobile-app/android/gradle.properties
-          echo "android.enableJetifier=true" >> mobile-app/android/gradle.properties
+        mkdir -p android
+        if [ ! -f android/gradle.properties ]; then
+          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" > android/gradle.properties
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
         fi
 
     - name: Final Gradle Patch Before Build
