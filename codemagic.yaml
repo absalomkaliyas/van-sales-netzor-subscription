@@ -1,132 +1,49 @@
 workflows:
-  android-workflow:
-    name: Android Build
+  android-production-build:
+    name: Android Production Build (Expo SDK 51)
     max_build_duration: 120
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m2
     environment:
       groups:
         - expo_secrets
       vars:
         EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL
         EXPO_PUBLIC_SUPABASE_ANON_KEY: $EXPO_PUBLIC_SUPABASE_ANON_KEY
+        # Memory boost for Gradle 8+
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx6g -Dfile.encoding=UTF-8"
       node: 20
       java: 17
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/mobile-app/node_modules
+        - $HOME/.gradle/caches
+        - $HOME/.gradle/wrapper
     scripts:
-      - name: Install mobile-app dependencies
+      - name: Install Dependencies
         script: |
           cd mobile-app
-          # Install dependencies without workspace hoisting
-          npm install --legacy-peer-deps
-          
-
+          # Use npm ci for reproducible builds
+          npm ci --legacy-peer-deps
           
       - name: Install Expo CLI
         script: |
           npm install -g @expo/cli@latest eas-cli@latest
           
-
-          
-      - name: Prebuild Android
+      - name: Prebuild Android (Generate Native Code)
         script: |
           cd mobile-app
+          # Clean prebuild to ensure new Gradle config is generated
           npx expo prebuild --platform android --clean
           
-      - name: Fix ExpoModulesCorePlugin Gradle Error (SKIPPED for SDK 51)
-        script: |
-          echo "Skipping legacy patch for SDK 51"
-          # cd mobile-app
-          # ... (legacy patch code removed/disabled)
-
-          
-      - name: Patch All Expo Modules
-        script: |
-          cd mobile-app
-          echo "🔧 Removing useDefaultAndroidSdkVersions() from all Expo modules..."
-          
-          # Function to patch a file
-          patch_gradle_file() {
-            local file="$1"
-            if [ -f "$file" ]; then
-              if grep -q "useDefaultAndroidSdkVersions()" "$file"; then
-                echo "Patching: $file"
-                echo "  Before:"
-                grep -n "useDefaultAndroidSdkVersions" "$file" || echo "    Not found in grep"
-                
-                # Method 1: Delete the entire line
-                grep -v "useDefaultAndroidSdkVersions()" "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
-                
-                echo "  After:"
-                if grep -q "useDefaultAndroidSdkVersions" "$file"; then
-                  echo "    ⚠️ Still exists!"
-                else
-                  echo "    ✅ Removed successfully"
-                fi
-              else
-                echo "  ✓ Already clean: $file"
-              fi
-            else
-              echo "  ⚠️ File not found: $file"
-            fi
-          }
-          
-          # Patch each known expo module explicitly
-          echo "Patching known expo modules..."
-          patch_gradle_file "node_modules/expo-camera/android/build.gradle"
-          patch_gradle_file "node_modules/expo-file-system/android/build.gradle"
-          patch_gradle_file "node_modules/expo-location/android/build.gradle"
-          patch_gradle_file "node_modules/expo-sharing/android/build.gradle"
-          patch_gradle_file "node_modules/expo-constants/android/build.gradle"
-          
-          # Also find and patch any others
-          echo ""
-          echo "Searching for any remaining expo modules..."
-          find node_modules -type f -path "*/expo-*/android/build.gradle" | while read file; do
-            patch_gradle_file "$file"
-          done
-          
-          # Final verification
-          echo ""
-          echo "=== Final Verification ==="
-          remaining=$(find node_modules -type f -path "*/expo-*/android/build.gradle" -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null | wc -l | tr -d ' ')
-          if [ "$remaining" -gt 0 ]; then
-            echo "❌ ERROR: Still found $remaining files with useDefaultAndroidSdkVersions():"
-            find node_modules -type f -path "*/expo-*/android/build.gradle" -exec grep -l "useDefaultAndroidSdkVersions()" {} \; 2>/dev/null
-            exit 1
-          else
-            echo "✅ All instances removed successfully!"
-          fi
-          
-      - name: Set Gradle Permissions
+      - name: Build Android APK
         script: |
           cd mobile-app/android
           chmod +x gradlew
           
-      - name: Build APK
-        script: |
-          cd mobile-app/android
-          chmod +x gradlew
+          echo "🚀 Starting Gradle Build (SDK 51 + Gradle 8)..."
           
-          echo "🚀 Starting Gradle Build..."
-          # Stream output to both console (stdout) and build.log
-          ./gradlew assembleRelease --stacktrace --info | tee build.log
-          
-          # capture the exit code of the pipeline (requires set -o pipefail usually, but tee returns 0. 
-          # We check for the existence of the APK or check ${PIPESTATUS[0]} if in bash)
-          
-          # Simplified approach: If the build fails, the command above usually returns non-zero.
-          # However, with legacy /bin/sh or some shells, pipe hides failure. 
-          # Let's rely on the file existence check + grep for failure if needed, 
-          # OR just rely on the fact that if it fails, we see it in the console now.
-          
-          # Better: use ${PIPESTATUS[0]} if available, else just let it fail naturally.
-          # CodeMagic uses bash usually.
-          
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then
-             echo "❌ Build failed!"
-             exit 1
-          fi
-          
-          echo "✅ Build Successful!"
+          # Clean build with stacktrace and info logging
+          ./gradlew assembleRelease --no-daemon --stacktrace --info
           
     artifacts:
       - mobile-app/android/app/build/outputs/**/*.apk
