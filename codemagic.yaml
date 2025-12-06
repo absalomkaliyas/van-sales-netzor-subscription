@@ -16,7 +16,7 @@ workflows:
         script: |
           cd mobile-app
           # Install dependencies without workspace hoisting
-          npm ci --legacy-peer-deps --no-workspaces
+          npm install --legacy-peer-deps
           
       - name: Install Expo CLI
         script: |
