@@ -42,7 +42,6 @@ workflows:
           cd mobile-app/android
           chmod +x gradlew
           
-          
           echo "🚀 Starting Gradle Build (SDK 51 + Gradle 8)..."
           
           # Use pipefail to catch build errors through tee
@@ -52,11 +51,16 @@ workflows:
             echo ""
             echo "❌ BUILD FAILED! AUTOMATIC ERROR REPORT:"
             echo "=============================================================================="
+            
             # Try to find the standard Gradle error block
-            grep -B 2 -A 20 "What went wrong:" build.log || true
-            echo "------------------------------------------------------------------------------"
-            # Try to find specific task failures
-            grep -B 2 -A 5 "FAILED" build.log | grep "Task :" || true
+            if grep -q "What went wrong:" build.log; then
+              echo "Found 'What went wrong' section:"
+              grep -B 2 -A 20 "What went wrong:" build.log
+            else
+              echo "No 'What went wrong' found. Showing last 100 lines of log:"
+              tail -n 100 build.log
+            fi
+            
             echo "=============================================================================="
             exit 1
           fi
