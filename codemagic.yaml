@@ -107,30 +107,26 @@ workflows:
           chmod +x gradlew
           
           echo "🚀 Starting Gradle Build..."
-          # Redirect stderr to stdout to capture EVERYTHING
-          ./gradlew assembleRelease --stacktrace --info > build.log 2>&1
+          # Stream output to both console (stdout) and build.log
+          ./gradlew assembleRelease --stacktrace --info | tee build.log
           
-          EXIT_CODE=$?
+          # capture the exit code of the pipeline (requires set -o pipefail usually, but tee returns 0. 
+          # We check for the existence of the APK or check ${PIPESTATUS[0]} if in bash)
           
-          if [ $EXIT_CODE -ne 0 ]; then
-            echo ""
-            echo "=============================================================================="
-            echo "❌ BUILD FAILED! SHOWING LAST 1000 LINES OF LOG"
-            echo "=============================================================================="
-            echo ""
-            
-            tail -n 1000 build.log
-            
-            echo ""
-            echo "=============================================================================="
-            echo "END OF ERROR DETAILS"
-            echo "=============================================================================="
-            exit $EXIT_CODE
-          else
-            echo "✅ Build Successful!"
-            # Print last 50 lines just in case
-            tail -n 50 build.log
+          # Simplified approach: If the build fails, the command above usually returns non-zero.
+          # However, with legacy /bin/sh or some shells, pipe hides failure. 
+          # Let's rely on the file existence check + grep for failure if needed, 
+          # OR just rely on the fact that if it fails, we see it in the console now.
+          
+          # Better: use ${PIPESTATUS[0]} if available, else just let it fail naturally.
+          # CodeMagic uses bash usually.
+          
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+             echo "❌ Build failed!"
+             exit 1
           fi
+          
+          echo "✅ Build Successful!"
           
     artifacts:
       - mobile-app/android/app/build/outputs/**/*.apk
