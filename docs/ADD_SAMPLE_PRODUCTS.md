@@ -50,3 +50,4 @@ Once you run the script:
 
 **Ready to add them?** Just run the SQL script in Supabase!
 
+

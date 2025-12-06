@@ -386,3 +386,4 @@ Stores audit trail for critical operations.
 | ip_address | text | IP address (optional) |
 | created_at | timestamp | Creation timestamp |
 
+

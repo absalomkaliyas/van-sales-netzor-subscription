@@ -74,3 +74,4 @@ if ($content -match "node:sea") {
     Write-Host "File already fixed or 'node:sea' not found" -ForegroundColor Green
 }
 
+

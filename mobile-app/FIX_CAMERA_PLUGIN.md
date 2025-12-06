@@ -57,3 +57,4 @@ Once Expo fixes the compatibility, you can add it back:
 
 **Rebuild now - it should work without the camera plugin!** 🚀
 
+

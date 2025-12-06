@@ -61,3 +61,4 @@ The app should start and open in your browser! 🎉
 
 **The fix is just removing the colon from `node:sea` → `node-sea`**
 
+

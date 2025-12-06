@@ -76,3 +76,4 @@ eas build --platform android --profile preview
 
 **Run these updated commands!** 🚀
 
+

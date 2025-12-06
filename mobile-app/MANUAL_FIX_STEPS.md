@@ -74,3 +74,4 @@ The error is just during startup - Expo still works!
 
 **Recommended**: Use web version for now, fix the file later when you have time.
 
+

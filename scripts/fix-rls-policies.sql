@@ -30,3 +30,4 @@ CREATE POLICY "Users can update own record" ON users
 -- For admin operations, we'll use service_role key in server-side code
 -- This avoids the recursion issue
 
+

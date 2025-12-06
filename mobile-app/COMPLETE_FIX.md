@@ -55,3 +55,4 @@ After fixing, search the file again for `node:sea`:
 
 **The key is: Remove the colon (`:`) from `node:sea` → `node-sea`**
 
+

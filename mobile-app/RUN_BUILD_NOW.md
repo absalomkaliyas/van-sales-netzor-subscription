@@ -47,3 +47,4 @@ The script will show the error. Common issues:
 
 **Run `npm run build:now` and let it handle everything!** 🤖
 
+

@@ -64,3 +64,4 @@ eas build --platform android --profile preview
 
 **Update dependencies first, then rebuild!** 🚀
 
+

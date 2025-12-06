@@ -135,3 +135,4 @@ FROM customers c
 LEFT JOIN price_lists pl ON c.price_list_id = pl.id
 ORDER BY c.created_at;
 
+

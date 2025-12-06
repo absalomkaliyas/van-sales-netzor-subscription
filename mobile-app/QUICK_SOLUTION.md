@@ -40,3 +40,4 @@ Once you want to test on a physical device:
 
 **For now: Just use `npx expo start --web` - it works perfectly!** 🚀
 
+

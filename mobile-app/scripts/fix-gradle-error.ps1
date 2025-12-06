@@ -38,3 +38,4 @@ Write-Host "Gradle error should be fixed now!" -ForegroundColor Green
 Write-Host "Run: npm run build:now" -ForegroundColor Cyan
 Write-Host ""
 
+

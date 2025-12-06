@@ -26,6 +26,18 @@ module.exports = {
       buildToolsVersion: "34.0.0"
     },
     plugins: [
+      // expo-build-properties must be first to set SDK versions before other plugins
+      [
+        "expo-build-properties",
+        {
+          android: {
+            compileSdkVersion: 34,
+            targetSdkVersion: 34,
+            minSdkVersion: 23,
+            buildToolsVersion: "34.0.0"
+          }
+        }
+      ],
       "expo-router"
     ],
     scheme: "vansales",
@@ -35,5 +47,4 @@ module.exports = {
       }
     }
   }
-}
-
+};

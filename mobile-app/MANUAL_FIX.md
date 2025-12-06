@@ -9,6 +9,8 @@ Expo crashes before showing QR code because it tries to create directory `node:s
 The file is located at one of these paths:
 - `B:\VAN Sales Netzor Subscription\node_modules\@expo\cli\src\start\server\metro\externals.ts`
 - `B:\VAN Sales Netzor Subscription\mobile-app\node_modules\@expo\cli\src\start\server\metro\externals.ts`
+r
+
 
 ### Step 2: Open in VS Code
 1. Open VS Code
@@ -54,4 +56,5 @@ The file might be in a different location. Search for it:
 2. Search for: `node:sea`
 3. It will show you where the file is
 4. Open that file and replace `'node:sea'` with `'node-sea'`
+
 

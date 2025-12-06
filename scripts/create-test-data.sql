@@ -118,3 +118,4 @@ SELECT 'Customers', COUNT(*) FROM customers WHERE is_active = true
 UNION ALL
 SELECT 'Routes', COUNT(*) FROM routes WHERE is_active = true;
 
+

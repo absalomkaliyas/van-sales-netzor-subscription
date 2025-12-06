@@ -59,3 +59,4 @@ The script will show the error. Common issues:
 
 **Run `npm run auto-fix` and let it handle everything!** 🤖
 
+

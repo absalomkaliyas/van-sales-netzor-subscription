@@ -15,3 +15,4 @@ SELECT id, name, description, is_default, created_at
 FROM price_lists 
 ORDER BY is_default DESC, created_at;
 
+

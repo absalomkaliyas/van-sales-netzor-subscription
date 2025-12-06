@@ -112,3 +112,4 @@ This will show you if products have image URLs or not.
 
 **Check the browser console first** - it will tell you exactly what's happening!
 
+

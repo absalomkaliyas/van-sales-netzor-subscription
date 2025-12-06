@@ -247,3 +247,4 @@ npx expo start --web
 
 Just wait for the QR code to appear and scan it with Expo Go!
 
+

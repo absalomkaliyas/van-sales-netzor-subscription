@@ -172,3 +172,4 @@ After running, you should see:
 
 **Remember**: You're copying the SQL **code** from the file, not the file path! 📋
 
+

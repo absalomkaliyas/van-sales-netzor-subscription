@@ -121,3 +121,4 @@ B:\VAN Sales Netzor Subscription\mobile-app\node_modules\@expo\cli\src\start\ser
 3. Try: `npm install` first
 4. Then search for `node:sea` in VS Code
 
+

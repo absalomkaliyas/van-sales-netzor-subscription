@@ -9,3 +9,4 @@ $env:EXPO_NO_METRO_EXTERNALS = "1"
 # Start Expo
 npx expo start
 
+

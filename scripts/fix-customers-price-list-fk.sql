@@ -25,3 +25,4 @@ SELECT
 FROM pg_constraint
 WHERE conname = 'fk_customers_price_list';
 
+

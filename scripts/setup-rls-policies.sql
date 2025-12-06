@@ -361,3 +361,4 @@ CREATE POLICY "Users can manage own sync queue" ON sync_queue
 -- SELECT * FROM users;
 -- RESET ROLE;
 
+

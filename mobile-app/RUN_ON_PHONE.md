@@ -101,3 +101,4 @@ Once connected, you'll see:
 
 **The `node:sea` error is just a Windows bug - it doesn't prevent the app from working!** 🚀
 
+

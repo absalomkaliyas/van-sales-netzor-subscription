@@ -55,3 +55,4 @@ The app will build with default Expo icons. You can customize them later!
 
 **Just rebuild - it should work now!** 🚀
 
+

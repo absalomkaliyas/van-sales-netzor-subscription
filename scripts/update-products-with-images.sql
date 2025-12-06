@@ -35,3 +35,4 @@ UPDATE products SET image_url = 'https://images.unsplash.com/photo-1559757175-0e
 -- Verify update
 SELECT sku, name, image_url IS NOT NULL as has_image FROM products ORDER BY sku;
 
+

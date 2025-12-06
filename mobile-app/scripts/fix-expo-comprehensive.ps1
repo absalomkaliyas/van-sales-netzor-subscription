@@ -64,3 +64,4 @@ if (-not $found) {
     Write-Host '(Get-Content "PATH\externals.ts") -replace "node:sea", "node-sea" | Set-Content "PATH\externals.ts"' -ForegroundColor Cyan
 }
 
+

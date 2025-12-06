@@ -144,3 +144,4 @@ console.log('Connection test:', error ? 'Failed' : 'Success')
 
 **Remember**: Supabase keys are JWT tokens starting with `eyJ...` and are very long!
 
+

@@ -68,3 +68,4 @@ B:\VAN Sales Netzor Subscription\mobile-app\node_modules\@expo\cli\src\start\ser
 2. Try: `cd mobile-app && npm install`
 3. Then search again for `node:sea`
 
+

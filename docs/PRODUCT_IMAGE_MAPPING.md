@@ -105,3 +105,4 @@ https://images.unsplash.com/photo-{TIMESTAMP}-{ID}?w=400&h=400&fit=crop&q=80
    WHERE sku = 'PRODXXX';
    ```
 
+

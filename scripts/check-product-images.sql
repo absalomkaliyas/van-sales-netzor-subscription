@@ -21,3 +21,4 @@ SELECT
   COUNT(*) - COUNT(image_url) as products_without_images
 FROM products;
 
+

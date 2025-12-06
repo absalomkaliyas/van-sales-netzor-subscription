@@ -70,3 +70,4 @@ You should see:
 
 **This is the only way to get the QR code - the file MUST be fixed manually.**
 
+

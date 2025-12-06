@@ -138,3 +138,4 @@ Then run Step 3a again.
 
 Once you've completed these steps, your project is now synced with GitHub. Any changes you make locally can be pushed to GitHub, and you can access your code from anywhere!
 
+

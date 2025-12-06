@@ -65,3 +65,4 @@ The error is just during startup - Expo still works!
 
 **Recommended**: Try Solution 1 (auto-fix script) first!
 
+

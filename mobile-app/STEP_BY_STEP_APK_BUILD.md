@@ -221,3 +221,4 @@ eas build --platform android --profile preview
 
 **Follow these steps one by one, and you'll have your APK in 15-20 minutes!** 📱
 
+

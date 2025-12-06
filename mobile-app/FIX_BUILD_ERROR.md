@@ -175,3 +175,4 @@ eas build --platform android --profile preview
 
 **After setting the environment variables, the build should succeed!** 🚀
 
+

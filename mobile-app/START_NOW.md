@@ -104,3 +104,4 @@ npx expo start --web
 
 **Run these commands in YOUR terminal to see the QR code!** 📱
 
+

@@ -43,3 +43,4 @@ ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 
 Your connection test should work, and you can proceed with building your application.
 
+

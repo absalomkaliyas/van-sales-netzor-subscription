@@ -47,3 +47,4 @@ eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "YOUR_KEY" --scope p
 
 **All configuration issues are fixed. The build should work now!** 🚀
 
+

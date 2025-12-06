@@ -144,3 +144,4 @@ eas build --platform android --profile preview
 
 The app is built in the cloud, so Windows issues don't matter!
 
+

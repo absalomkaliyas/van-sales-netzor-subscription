@@ -169,3 +169,4 @@ Once environment variables are set:
 
 **Your environment is almost ready! Just add the service_role key and you're good to go!** 🎉
 
+
