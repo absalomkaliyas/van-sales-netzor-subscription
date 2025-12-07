@@ -1,84 +1,50 @@
 workflows:
-  android-production-build:
-    name: Android Production Build (Expo SDK 51)
-    max_build_duration: 120
+  android-eas-build:
+    name: Android EAS Build (Expo SDK 51)
     instance_type: mac_mini_m2
+    max_build_duration: 120
     environment:
       groups:
         - expo_secrets
       vars:
         EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL
         EXPO_PUBLIC_SUPABASE_ANON_KEY: $EXPO_PUBLIC_SUPABASE_ANON_KEY
-        # Memory boost for Gradle 8+
-        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx6g -Dfile.encoding=UTF-8"
+        EXPO_TOKEN: $EXPO_TOKEN # Required for EAS authentication
       node: 20
-      java: 17
-    cache:
-      cache_paths:
-        - $CM_BUILD_DIR/mobile-app/node_modules
-        - $HOME/.gradle/caches
-        - $HOME/.gradle/wrapper
     scripts:
-      - name: Install Dependencies
+      - name: Install dependencies
         script: |
           cd mobile-app
-          # Use npm install since package-lock.json might be missing
           npm install --legacy-peer-deps
           
-      - name: Install Expo CLI
+      - name: Install EAS CLI
         script: |
-          npm install -g @expo/cli@latest eas-cli@latest
+          npm install -g eas-cli@latest
           
-      - name: Prebuild Android (Generate Native Code)
+      - name: Build with EAS (Local)
         script: |
           cd mobile-app
-          # Delete old android folder to ensure clean SDK 51 generation
-          rm -rf android
-          # Clean prebuild to ensure new Gradle config is generated
-          npx expo prebuild --platform android --clean
           
-      - name: Disable Expo Maven Publishing (workaround)
-        script: |
-          cd mobile-app/android
+          echo "🚀 Starting EAS Build for Android..."
+          echo "Using Expo's managed build system to bypass local Gradle issues"
           
-          echo "📝 Adding Gradle property to disable Expo maven publishing..."
-          echo "" >> gradle.properties
-          echo "# Workaround for expo-modules-core components.release bug" >> gradle.properties
-          echo "expo.disableMavenPublishing=true" >> gradle.properties
+          # Build APK using EAS local build
+          eas build --platform android --profile production --local --non-interactive --output=./build.apk
           
-          echo "✅ Updated gradle.properties:"
-          tail -3 gradle.properties
-          
-      - name: Build Android APK
-        script: |
-          cd mobile-app/android
-          chmod +x gradlew
-          
-          echo "🚀 Starting Gradle Build (SDK 51 + Gradle 8)..."
-          
-          # Capture both stdout and stderr to log file
-          ./gradlew assembleRelease --no-daemon --stacktrace --info > build.log 2>&1
-          BUILD_EXIT_CODE=$?
-          
-          if [ $BUILD_EXIT_CODE -ne 0 ]; then
-            echo ""
-            echo "❌ BUILD FAILED! AUTOMATIC ERROR REPORT:"
-            echo "=============================================================================="
-            echo "Build exit code: $BUILD_EXIT_CODE"
-            echo "Log file size: $(wc -c < build.log) bytes"
-            echo "Log file lines: $(wc -l < build.log) lines"
-            echo ""
-            
-            # Always show the last 150 lines
-            echo "Last 150 lines of build output:"
-            tail -n 150 build.log
-            
-            echo "=============================================================================="
+          if [ -f "./build.apk" ]; then
+            echo "✅ Build succeeded! APK created"
+            ls -lh ./build.apk
+          else
+            echo "❌ Build failed - APK not found"
             exit 1
           fi
           
-          echo "✅ Build succeeded!"
-          
     artifacts:
-      - mobile-app/android/app/build/outputs/**/*.apk
-      - mobile-app/android/build.log
+      - mobile-app/build.apk
+    publishing:
+      email:
+        recipients:
+          - $CM_BUILD_EMAIL
+        notify:
+          success: true
+          failure: true
