@@ -37,6 +37,21 @@ workflows:
           # Clean prebuild to ensure new Gradle config is generated
           npx expo prebuild --platform android --clean
           
+      - name: Force AGP 8.1.4 (Expo SDK 51 compatibility)
+        script: |
+          cd mobile-app/android
+          
+          echo "📝 Patching build.gradle to force AGP 8.1.4..."
+          
+          # Backup original
+          cp build.gradle build.gradle.backup
+          
+          # Replace AGP version in buildscript dependencies
+          sed -i.bak 's/com.android.tools.build:gradle:[0-9.]\+/com.android.tools.build:gradle:8.1.4/g' build.gradle
+          
+          echo "✅ Patched AGP version:"
+          grep "com.android.tools.build:gradle" build.gradle
+          
       - name: Build Android APK
         script: |
           cd mobile-app/android
