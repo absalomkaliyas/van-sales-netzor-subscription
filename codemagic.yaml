@@ -1,66 +1,71 @@
 workflows:
-  android-eas-build:
-    name: Android EAS Build (Expo SDK 51)
-    instance_type: mac_mini_m2
+  android-production-build:
+    name: Android Production Build (Expo SDK 51)
     max_build_duration: 120
+    instance_type: mac_mini_m2
     environment:
       groups:
         - expo_secrets
       vars:
         EXPO_PUBLIC_SUPABASE_URL: $EXPO_PUBLIC_SUPABASE_URL
         EXPO_PUBLIC_SUPABASE_ANON_KEY: $EXPO_PUBLIC_SUPABASE_ANON_KEY
-        EXPO_TOKEN: $EXPO_TOKEN # Required for EAS authentication
+        # Memory boost for Gradle 8+
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx6g -Dfile.encoding=UTF-8"
       node: 20
+      java: 17
     scripts:
-      - name: Install dependencies
+      - name: Install Dependencies
         script: |
           cd mobile-app
+          # Use npm install to ensure all dependencies including expo-modules-core are present
           npm install --legacy-peer-deps
           
-      - name: Install EAS CLI
+      - name: Install Expo CLI
         script: |
-          npm install -g eas-cli@latest
+          npm install -g @expo/cli@latest
           
-      - name: Build with EAS (Local)
+      - name: Prebuild Android (Generate Native Code)
+        script: |
+          cd mobile-app
+          # Delete old android folder to ensure clean SDK 51 generation
+          rm -rf android
+          # Clean prebuild ensures fresh config
+          npx expo prebuild --platform android --clean
+          
+      - name: Patch Expo Modules Core (Robust Fix)
         script: |
           cd mobile-app
           
-          # Validate EXPO_TOKEN
-          if [ -z "$EXPO_TOKEN" ]; then
-            echo "❌ EXPO_TOKEN is not set!"
-            echo "Please add EXPO_TOKEN to CodeMagic environment variables"
-            echo "Get your token from: https://expo.dev/settings/access-tokens"
+          echo "📝 Searching for buggy ExpoModulesCorePlugin.gradle..."
+          # Find all instances of the file in the entire directory
+          FOUND_FILES=$(find . -name "ExpoModulesCorePlugin.gradle" -type f)
+          
+          if [ -z "$FOUND_FILES" ]; then
+            echo "❌ Could not find ExpoModulesCorePlugin.gradle anywhere!"
+            echo "Listing node_modules/expo-modules-core:"
+            ls -R node_modules/expo-modules-core || echo "node_modules/expo-modules-core not found"
             exit 1
           fi
           
-          echo "✅ EXPO_TOKEN is set"
-          echo "   Length: ${#EXPO_TOKEN} chars (Expected: >200)"
-          echo "   Starts with: ${EXPO_TOKEN:0:4}..."
+          for FILE in $FOUND_FILES; do
+            echo "🔧 Patching file: $FILE"
+            # create backup
+            cp "$FILE" "$FILE.backup"
+            # Comment out line 85 (or any line matching the buggy code)
+            sed -i.bak 's/from components.release/\/\/ from components.release \/\/ PATCHED BY CI/g' "$FILE"
+            echo "✅ Patched $FILE"
+            grep "PATCHED BY CI" "$FILE"
+          done
           
-          # Export token for EAS CLI
-          export EXPO_TOKEN="$EXPO_TOKEN"
+      - name: Build Android APK (Gradle)
+        script: |
+          cd mobile-app/android
+          chmod +x gradlew
           
-          # Verify EAS authentication
-          echo "Verifying EAS authentication..."
-          eas whoami || {
-            echo "❌ Authentication failed. Token might be invalid."
-            echo "Please create a new token at: https://expo.dev/settings/access-tokens"
-            exit 1
-          }
+          echo "🚀 Starting Gradle Build..."
           
-          echo "🚀 Starting EAS Build for Android..."
-          echo "Using Expo's managed build system to bypass local Gradle issues"
-          
-          # Build APK using EAS local build
-          eas build --platform android --profile production --local --non-interactive --output=./build.apk
-          
-          if [ -f "./build.apk" ]; then
-            echo "✅ Build succeeded! APK created"
-            ls -lh ./build.apk
-          else
-            echo "❌ Build failed - APK not found"
-            exit 1
-          fi
+          # Run build using Gradle wrapper
+          ./gradlew assembleRelease --no-daemon --stacktrace
           
     artifacts:
-      - mobile-app/build.apk
+      - mobile-app/android/app/build/outputs/**/*.apk
