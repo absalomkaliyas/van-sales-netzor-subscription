@@ -14,15 +14,20 @@ workflows:
       node: 20
       java: 17
     scripts:
-      - name: Install Dependencies
+      - name: Install Dependencies & Fix Versions
         script: |
           cd mobile-app
-          # Use npm install to ensure all dependencies including expo-modules-core are present
+          # Install current package.json dependencies
           npm install --legacy-peer-deps
           
-      - name: Install Expo CLI
-        script: |
-          npm install -g @expo/cli@latest
+          # Force update Expo dependencies to match SDK 51 requirements
+          # This fixes the expo-modules-core incompatibility by pulling the latest patch version
+          echo "🔧 Fixing Expo dependency versions..."
+          npx expo install --fix
+          
+          # Verify expo-modules-core version
+          echo "📦 Checked expo-modules-core version:"
+          npm list expo-modules-core
           
       - name: Prebuild Android (Generate Native Code)
         script: |
@@ -31,38 +36,6 @@ workflows:
           rm -rf android
           # Clean prebuild ensures fresh config
           npx expo prebuild --platform android --clean
-          
-      - name: Patch Expo Modules Core (Global Search)
-        script: |
-          echo "📝 Searching for buggy ExpoModulesCorePlugin.gradle recursively from ROOT..."
-          
-          # Go to CI root directory to search everywhere
-          cd $CM_BUILD_DIR
-          
-          # Find EVERY instance of the file (including in root node_modules if hoisted)
-          FOUND_FILES=$(find . -name "ExpoModulesCorePlugin.gradle" -type f)
-          
-          if [ -z "$FOUND_FILES" ]; then
-            echo "❌ Still not found! Debugging filesystem..."
-            echo "Current location: $(pwd)"
-            echo "Directory structure:"
-            ls -F
-            echo "Checking mobile-app/node_modules:"
-            ls -F mobile-app/node_modules/expo-modules-core || echo "mobile-app/node_modules/expo-modules-core missing"
-            echo "Checking root node_modules:"
-            ls -F node_modules/expo-modules-core || echo "root node_modules/expo-modules-core missing"
-            exit 1
-          fi
-          
-          for FILE in $FOUND_FILES; do
-            echo "🔧 Patching file: $FILE"
-            # create backup
-            cp "$FILE" "$FILE.backup"
-            # Comment out line 85 (or any line matching the buggy code)
-            sed -i.bak 's/from components.release/\/\/ from components.release \/\/ PATCHED BY CI/g' "$FILE"
-            echo "✅ Patched $FILE"
-            grep "PATCHED BY CI" "$FILE"
-          done
           
       - name: Build Android APK (Gradle)
         script: |
