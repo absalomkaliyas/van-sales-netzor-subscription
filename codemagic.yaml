@@ -37,46 +37,28 @@ workflows:
           # Clean prebuild to ensure new Gradle config is generated
           npx expo prebuild --platform android --clean
           
-      - name: Patch expo-modules-core bug (line 85)
+      - name: Debug expo-modules-core package
         script: |
           cd mobile-app
           
-          echo "📝 Patching ExpoModulesCorePlugin.gradle to fix 'release' property bug..."
-          
-          # Debug: Check current directory and node_modules
+          echo "📝 Investigating expo-modules-core package structure..."
           echo "Current directory: $(pwd)"
-          echo "Checking for node_modules..."
-          ls -la | grep node_modules || echo "node_modules not found in current dir"
           
-          # Try to find the file
-          echo "Searching for ExpoModulesCorePlugin.gradle..."
-          find . -name "ExpoModulesCorePlugin.gradle" -type f 2>/dev/null || echo "File not found anywhere"
-          
-          PLUGIN_FILE="node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
-          
-          if [ ! -f "$PLUGIN_FILE" ]; then
-            echo "❌ Plugin file not found at: $PLUGIN_FILE"
-            echo "Trying alternate path..."
-            # Maybe it's in the root?
-            cd ..
-            PLUGIN_FILE="mobile-app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
-            if [ ! -f "$PLUGIN_FILE" ]; then
-              echo "❌ Still not found!"
-              exit 1
-            fi
+          # Check if expo-modules-core exists
+          if [ -d "node_modules/expo-modules-core" ]; then
+            echo "✅ expo-modules-core package found"
+            echo ""
+            echo "Package structure:"
+            ls -la node_modules/expo-modules-core/
+            echo ""
+            echo "Checking for android directory:"
+            ls -la node_modules/expo-modules-core/android/ 2>/dev/null || echo "No android directory"
+            echo ""
+            echo "Searching for .gradle files:"
+            find node_modules/expo-modules-core -name "*.gradle" -type f
+          else
+            echo "❌ expo-modules-core package not found!"
           fi
-          
-          echo "✅ Found plugin file at: $PLUGIN_FILE"
-          
-          # Backup original
-          cp "$PLUGIN_FILE" "$PLUGIN_FILE.backup"
-          
-          # Comment out the buggy line 85
-          sed -i.bak '85s/.*/                \/\/ from components.release \/\/ PATCHED: incompatible with Gradle 8.x/' "$PLUGIN_FILE"
-          
-          echo "✅ Patched expo-modules-core plugin"
-          echo "Line 85 is now:"
-          sed -n '85p' "$PLUGIN_FILE"
           
       - name: Build Android APK
         script: |
