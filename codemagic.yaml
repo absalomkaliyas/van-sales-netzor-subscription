@@ -33,7 +33,9 @@ workflows:
             exit 1
           fi
           
-          echo "✅ EXPO_TOKEN is set (length: ${#EXPO_TOKEN} chars)"
+          echo "✅ EXPO_TOKEN is set"
+          echo "   Length: ${#EXPO_TOKEN} chars (Expected: >200)"
+          echo "   Starts with: ${EXPO_TOKEN:0:4}..."
           
           # Export token for EAS CLI
           export EXPO_TOKEN="$EXPO_TOKEN"
