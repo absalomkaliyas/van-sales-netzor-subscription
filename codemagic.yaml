@@ -37,6 +37,35 @@ workflows:
           # Clean prebuild ensures fresh config
           npx expo prebuild --platform android --clean
           
+      - name: Patch Expo Modules Core (Targeted Root Fix)
+        script: |
+          # Define the specific path where the error is occurring (Root of the repo)
+          TARGET_FILE="$CM_BUILD_DIR/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
+          
+          echo "📝 Targeted Patching of: $TARGET_FILE"
+          
+          if [ -f "$TARGET_FILE" ]; then
+            echo "✅ Found file at root!"
+            # create backup
+            cp "$TARGET_FILE" "$TARGET_FILE.backup"
+            # Comment out line 85 (or any line matching the buggy code)
+            sed -i.bak 's/from components.release/\/\/ from components.release \/\/ PATCHED BY CI/g' "$TARGET_FILE"
+            echo "✅ Patched file successfully"
+            grep "PATCHED BY CI" "$TARGET_FILE"
+          else
+            echo "❌ File not found at expected path: $TARGET_FILE"
+            echo "Listing root node_modules/expo-modules-core to debug:"
+            ls -R "$CM_BUILD_DIR/node_modules/expo-modules-core" || echo "Dir not found"
+            exit 1
+          fi
+          
+          # Also check mobile-app just in case
+          TARGET_FILE_LOCAL="$CM_BUILD_DIR/mobile-app/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
+          if [ -f "$TARGET_FILE_LOCAL" ]; then
+             echo "🔧 Also patching local instance: $TARGET_FILE_LOCAL"
+             sed -i.bak 's/from components.release/\/\/ from components.release \/\/ PATCHED BY CI/g' "$TARGET_FILE_LOCAL"
+          fi
+          
       - name: Build Android APK (Gradle)
         script: |
           cd mobile-app/android
