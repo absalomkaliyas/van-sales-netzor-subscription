@@ -41,10 +41,3 @@ workflows:
           
     artifacts:
       - mobile-app/build.apk
-    publishing:
-      email:
-        recipients:
-          - $CM_BUILD_EMAIL
-        notify:
-          success: true
-          failure: true
