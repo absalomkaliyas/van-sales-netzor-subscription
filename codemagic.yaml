@@ -32,18 +32,25 @@ workflows:
           # Clean prebuild ensures fresh config
           npx expo prebuild --platform android --clean
           
-      - name: Patch Expo Modules Core (Robust Fix)
+      - name: Patch Expo Modules Core (Global Search)
         script: |
-          cd mobile-app
+          echo "📝 Searching for buggy ExpoModulesCorePlugin.gradle recursively from ROOT..."
           
-          echo "📝 Searching for buggy ExpoModulesCorePlugin.gradle..."
-          # Find all instances of the file in the entire directory
+          # Go to CI root directory to search everywhere
+          cd $CM_BUILD_DIR
+          
+          # Find EVERY instance of the file (including in root node_modules if hoisted)
           FOUND_FILES=$(find . -name "ExpoModulesCorePlugin.gradle" -type f)
           
           if [ -z "$FOUND_FILES" ]; then
-            echo "❌ Could not find ExpoModulesCorePlugin.gradle anywhere!"
-            echo "Listing node_modules/expo-modules-core:"
-            ls -R node_modules/expo-modules-core || echo "node_modules/expo-modules-core not found"
+            echo "❌ Still not found! Debugging filesystem..."
+            echo "Current location: $(pwd)"
+            echo "Directory structure:"
+            ls -F
+            echo "Checking mobile-app/node_modules:"
+            ls -F mobile-app/node_modules/expo-modules-core || echo "mobile-app/node_modules/expo-modules-core missing"
+            echo "Checking root node_modules:"
+            ls -F node_modules/expo-modules-core || echo "root node_modules/expo-modules-core missing"
             exit 1
           fi
           
