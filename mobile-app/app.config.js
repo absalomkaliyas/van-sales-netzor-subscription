@@ -37,7 +37,10 @@ module.exports = {
             buildToolsVersion: "34.0.0",
             // Ensure Java 17 and Kotlin 1.9.23 are used
             javaVersion: "17",
-            kotlinVersion: "1.9.23"
+            kotlinVersion: "1.9.23",
+            // AGP 8.1.4 for Expo SDK 51 compatibility (8.2.1 has issues)
+            gradleVersion: "8.8",
+            androidGradlePluginVersion: "8.1.4"
           }
         }
       ],
