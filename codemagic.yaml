@@ -37,17 +37,18 @@ workflows:
           # Clean prebuild to ensure new Gradle config is generated
           npx expo prebuild --platform android --clean
           
-      - name: Force AGP 8.1.4 (Expo SDK 51 compatibility)
+      - name: Force AGP 7.4.2 (expo-modules-core compatibility)
         script: |
           cd mobile-app/android
           
-          echo "📝 Patching build.gradle to force AGP 8.1.4..."
+          echo "📝 Patching build.gradle to force AGP 7.4.2..."
+          echo "Reason: expo-modules-core ~1.12.0 is incompatible with AGP 8.x"
           
           # Backup original
           cp build.gradle build.gradle.backup
           
-          # Replace AGP version in buildscript dependencies
-          sed -i.bak 's/com.android.tools.build:gradle:[0-9.]\+/com.android.tools.build:gradle:8.1.4/g' build.gradle
+          # Replace AGP version - 7.4.2 works with Gradle 8.8 + Expo SDK 51
+          sed -i.bak 's/com.android.tools.build:gradle:[0-9.]\+/com.android.tools.build:gradle:7.4.2/g' build.gradle
           
           echo "✅ Patched AGP version:"
           grep "com.android.tools.build:gradle" build.gradle
