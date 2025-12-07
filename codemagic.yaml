@@ -37,21 +37,29 @@ workflows:
           # Clean prebuild to ensure new Gradle config is generated
           npx expo prebuild --platform android --clean
           
-      - name: Force AGP 7.4.2 (expo-modules-core compatibility)
+      - name: Patch expo-modules-core bug (line 85)
         script: |
-          cd mobile-app/android
+          cd mobile-app
           
-          echo "📝 Patching build.gradle to force AGP 7.4.2..."
-          echo "Reason: expo-modules-core ~1.12.0 is incompatible with AGP 8.x"
+          echo "📝 Patching ExpoModulesCorePlugin.gradle to fix 'release' property bug..."
+          
+          PLUGIN_FILE="node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
+          
+          if [ ! -f "$PLUGIN_FILE" ]; then
+            echo "❌ Plugin file not found!"
+            exit 1
+          fi
           
           # Backup original
-          cp build.gradle build.gradle.backup
+          cp "$PLUGIN_FILE" "$PLUGIN_FILE.backup"
           
-          # Replace AGP version - 7.4.2 works with Gradle 8.8 + Expo SDK 51
-          sed -i.bak 's/com.android.tools.build:gradle:[0-9.]\+/com.android.tools.build:gradle:7.4.2/g' build.gradle
+          # Comment out the buggy line 85 that tries to access components.release
+          # This line is incompatible with modern Gradle versions
+          sed -i.bak '85s/.*/                \/\/ from components.release \/\/ PATCHED: incompatible with Gradle 8.x/' "$PLUGIN_FILE"
           
-          echo "✅ Patched AGP version:"
-          grep "com.android.tools.build:gradle" build.gradle
+          echo "✅ Patched expo-modules-core plugin"
+          echo "Line 85 is now:"
+          sed -n '85p' "$PLUGIN_FILE"
           
       - name: Build Android APK
         script: |
