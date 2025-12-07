@@ -37,28 +37,21 @@ workflows:
           # Clean prebuild to ensure new Gradle config is generated
           npx expo prebuild --platform android --clean
           
-      - name: Debug expo-modules-core package
+      - name: Debug expo plugin location
         script: |
           cd mobile-app
           
-          echo "📝 Investigating expo-modules-core package structure..."
+          echo "📝 Searching for ExpoModulesCorePlugin.gradle after prebuild..."
           echo "Current directory: $(pwd)"
           
-          # Check if expo-modules-core exists
-          if [ -d "node_modules/expo-modules-core" ]; then
-            echo "✅ expo-modules-core package found"
-            echo ""
-            echo "Package structure:"
-            ls -la node_modules/expo-modules-core/
-            echo ""
-            echo "Checking for android directory:"
-            ls -la node_modules/expo-modules-core/android/ 2>/dev/null || echo "No android directory"
-            echo ""
-            echo "Searching for .gradle files:"
-            find node_modules/expo-modules-core -name "*.gradle" -type f
-          else
-            echo "❌ expo-modules-core package not found!"
-          fi
+          # Search in android folder (created by prebuild)
+          echo ""
+          echo "Searching in android folder:"
+          find android -name "*ExpoModules*.gradle" -type f 2>/dev/null || echo "No ExpoModules .gradle files found in android/"
+          
+          echo ""
+          echo "Searching for any .gradle files with 'release' or 'components':"
+          find android -name "*.gradle" -type f -exec grep -l "components.release" {} \; 2>/dev/null || echo "No files found with 'components.release'"
           
       - name: Build Android APK
         script: |
