@@ -33,8 +33,18 @@ workflows:
             exit 1
           fi
           
+          echo "✅ EXPO_TOKEN is set (length: ${#EXPO_TOKEN} chars)"
+          
           # Export token for EAS CLI
           export EXPO_TOKEN="$EXPO_TOKEN"
+          
+          # Verify EAS authentication
+          echo "Verifying EAS authentication..."
+          eas whoami || {
+            echo "❌ Authentication failed. Token might be invalid."
+            echo "Please create a new token at: https://expo.dev/settings/access-tokens"
+            exit 1
+          }
           
           echo "🚀 Starting EAS Build for Android..."
           echo "Using Expo's managed build system to bypass local Gradle issues"
