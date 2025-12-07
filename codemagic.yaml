@@ -25,6 +25,17 @@ workflows:
         script: |
           cd mobile-app
           
+          # Validate EXPO_TOKEN
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "❌ EXPO_TOKEN is not set!"
+            echo "Please add EXPO_TOKEN to CodeMagic environment variables"
+            echo "Get your token from: https://expo.dev/settings/access-tokens"
+            exit 1
+          fi
+          
+          # Export token for EAS CLI
+          export EXPO_TOKEN="$EXPO_TOKEN"
+          
           echo "🚀 Starting EAS Build for Android..."
           echo "Using Expo's managed build system to bypass local Gradle issues"
           
