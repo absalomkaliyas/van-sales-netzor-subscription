@@ -22,7 +22,8 @@
     "mobile-app"
   ],
   "author": "NETZOR",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@expo/config-plugins": "^7.9.2"
+  }
 }
-
-
