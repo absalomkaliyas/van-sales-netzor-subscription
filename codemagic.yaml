@@ -37,6 +37,48 @@ workflows:
           # Clean prebuild ensures fresh config
           npx expo prebuild --platform android --clean
           
+          # Verify and fix plugin registration if needed
+          if [ -f "android/build.gradle" ]; then
+            echo "Checking buildscript for expo-modules-core plugin..."
+            if ! grep -q "expo-modules-core.*gradle-plugin" android/build.gradle; then
+              echo "⚠️ Plugin not found - adding it to buildscript..."
+              
+              # Find the buildscript dependencies block
+              if grep -q "buildscript" android/build.gradle && grep -q "dependencies {" android/build.gradle; then
+                # Get the line number of the last classpath entry
+                LAST_CLASSPATH=$(grep -n "classpath" android/build.gradle | tail -1 | cut -d: -f1)
+                if [ -n "$LAST_CLASSPATH" ]; then
+                  # Add the plugin classpath after the last classpath
+                  # Use included build approach (recommended by Expo)
+                  PLUGIN_LINE="        id 'expo-module-gradle-plugin'"
+                  sed -i.bak "${LAST_CLASSPATH}a\\
+${PLUGIN_LINE}" android/build.gradle
+                  echo "✅ Added plugin to buildscript"
+                else
+                  # Find dependencies { line
+                  DEPS_LINE=$(grep -n "dependencies {" android/build.gradle | head -1 | cut -d: -f1)
+                  if [ -n "$DEPS_LINE" ]; then
+                    PLUGIN_LINE="        id 'expo-module-gradle-plugin'"
+                    sed -i.bak "${DEPS_LINE}a\\
+${PLUGIN_LINE}" android/build.gradle
+                    echo "✅ Added plugin to buildscript"
+                  fi
+                fi
+              fi
+            else
+              echo "✅ Plugin already in buildscript"
+            fi
+          fi
+          
+          # Verify settings.gradle has autolinking
+          if [ -f "android/settings.gradle" ]; then
+            if grep -q "expo-modules-core" android/settings.gradle; then
+              echo "✅ expo-modules-core autolinking found"
+            else
+              echo "⚠️ expo-modules-core autolinking NOT found"
+            fi
+          fi
+          
       - name: Patch Expo Modules Core (Targeted Root Fix)
         script: |
           # Define the specific path where the error is occurring (Root of the repo)
