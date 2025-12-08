@@ -13,23 +13,18 @@ workflows:
       node: 20
       java: 17
     scripts:
-      - name: Install Root Dependencies
-        script: |
-          # Install ajv at root level to fix workspace hoisting issue
-          npm install ajv@^8.12.0 --save-dev --legacy-peer-deps --no-workspaces || true
-          
-      - name: Install Mobile App Dependencies
+      - name: Install Mobile App Dependencies (No Workspace)
         script: |
           cd mobile-app
-          npm ci --legacy-peer-deps
-          # Ensure expo is installed locally (not hoisted)
-          npm install expo@~50.0.0 --save --legacy-peer-deps
+          # Use npm install instead of npm ci to avoid workspace issues
+          rm -rf node_modules package-lock.json
+          npm install --legacy-peer-deps --no-workspaces
+          # Ensure expo is installed locally
+          npm install expo@~50.0.0 --save --legacy-peer-deps --no-workspaces
           # Install @expo/config-plugins for SDK 50 compatibility
-          npm install @expo/config-plugins@^7.8.0 --save-dev --legacy-peer-deps
-          # Fix ajv dependency issue (required by ajv-keywords) - ensure it's in mobile-app
-          npm install ajv@^8.12.0 --save-dev --legacy-peer-deps
-          # Also install ajv-keywords to ensure compatibility
-          npm install ajv-keywords@^5.1.0 --save-dev --legacy-peer-deps || true
+          npm install @expo/config-plugins@^7.8.0 --save-dev --legacy-peer-deps --no-workspaces
+          # Fix ajv dependency issue - install compatible versions
+          npm install ajv@^8.12.0 ajv-keywords@^5.1.0 --save-dev --legacy-peer-deps --no-workspaces
           
       - name: Install Expo CLI
         script: |
