@@ -5,7 +5,7 @@ process.env.EXPO_NO_METRO_EXTERNALS = '1';
 module.exports = {
   expo: {
     name: "VAN Sales NETZOR - Supplier",
-    slug: "van-sales-netzor-supplier",
+    slug: "van-sales-netzor",
     version: "1.0.0",
     orientation: "portrait",
     userInterfaceStyle: "light",
