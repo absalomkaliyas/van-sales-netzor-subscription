@@ -16,7 +16,11 @@ workflows:
       - name: Install Mobile App Dependencies
         script: |
           cd mobile-app
-          npm ci
+          npm ci --legacy-peer-deps
+          # Ensure expo is installed locally (not hoisted)
+          npm install expo@~50.0.0 --save --legacy-peer-deps
+          # Install @expo/config-plugins for SDK 50 compatibility
+          npm install @expo/config-plugins@^7.8.0 --save-dev --legacy-peer-deps
           
       - name: Install Expo CLI
         script: |
@@ -26,8 +30,6 @@ workflows:
         script: |
           cd mobile-app
           npx expo install --fix
-          # Ensure expo package includes config-plugins
-          npm list expo || npm install expo@~50.0.0
           
       - name: Prebuild Android
         script: |
