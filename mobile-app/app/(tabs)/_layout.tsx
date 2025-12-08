@@ -1,79 +1,50 @@
-import { Tabs } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function TabsLayout() {
+export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
+        tabBarActiveTintColor: '#007AFF',
         headerShown: true,
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: '#6b7280',
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Dashboard',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="products"
+        name="assignments"
         options={{
-          title: 'Products',
+          title: 'Assignments',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="list" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="customers"
+        name="collections"
         options={{
-          title: 'Customers',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="inventory"
-        options={{
-          title: 'Inventory',
+          title: 'Collections',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cube" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="orders"
+        name="deliveries"
         options={{
-          title: 'Orders',
+          title: 'Deliveries',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="payments"
-        options={{
-          title: 'Payments',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cash" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+            <Ionicons name="car" size={size} color={color} />
           ),
         }}
       />
     </Tabs>
-  )
+  );
 }
-

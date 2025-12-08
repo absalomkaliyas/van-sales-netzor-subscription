@@ -1,8 +1,8 @@
-// app.config.js - Minimal working configuration
+// app.config.js - Supplier Mobile App Configuration
 module.exports = {
   expo: {
-    name: "VAN Sales NETZOR",
-    slug: "van-sales-netzor",
+    name: "VAN Sales NETZOR - Supplier",
+    slug: "van-sales-netzor-supplier",
     version: "1.0.0",
     orientation: "portrait",
     userInterfaceStyle: "light",
@@ -12,10 +12,10 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.netzor.vansales"
+      bundleIdentifier: "com.netzor.vansales.supplier"
     },
     android: {
-      package: "com.netzor.vansales",
+      package: "com.netzor.vansales.supplier",
       permissions: [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -26,7 +26,6 @@ module.exports = {
       buildToolsVersion: "34.0.0"
     },
     plugins: [
-      // expo-build-properties must be first to set SDK versions before other plugins
       [
         "expo-build-properties",
         {
@@ -35,18 +34,25 @@ module.exports = {
             targetSdkVersion: 34,
             minSdkVersion: 23,
             buildToolsVersion: "34.0.0",
-            // Ensure Java 17 and Kotlin 1.9.23 are used
-            javaVersion: "17",
-            kotlinVersion: "1.9.23",
-            // AGP 8.1.4 for Expo SDK 51 compatibility (8.2.1 has issues)
-            gradleVersion: "8.8",
-            androidGradlePluginVersion: "8.1.4"
+            javaVersion: "17"
           }
         }
       ],
-      "expo-router"
+      "expo-router",
+      [
+        "expo-location",
+        {
+          locationAlwaysAndWhenInUsePermission: "Allow VAN Sales NETZOR to use your location for delivery tracking."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          cameraPermission: "Allow VAN Sales NETZOR to access your camera for scanning products."
+        }
+      ]
     ],
-    scheme: "vansales",
+    scheme: "vansales-supplier",
     extra: {
       eas: {
         projectId: "307a5b40-8250-4e97-80e8-25bef212bd6e"
@@ -54,3 +60,4 @@ module.exports = {
     }
   }
 };
+

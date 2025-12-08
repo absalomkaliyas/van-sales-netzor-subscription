@@ -1,47 +1,18 @@
-import { Stack } from 'expo-router'
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { useRouter, useSegments } from 'expo-router'
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
-  const router = useRouter()
-  const segments = useSegments()
-
-  useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session)
-      if (session) {
-        router.replace('/(tabs)')
-      } else {
-        router.replace('/login')
-      }
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session)
-      if (session) {
-        router.replace('/(tabs)')
-      } else {
-        router.replace('/login')
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  if (isAuthenticated === null) {
-    return null // Or a loading screen
-  }
-
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="login" />
-      <Stack.Screen name="(tabs)" />
-    </Stack>
-  )
+    <>
+      <StatusBar style="auto" />
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ title: 'Login' }} />
+        <Stack.Screen name="stock-assignment" options={{ title: 'Stock Assignment' }} />
+        <Stack.Screen name="collect-stock" options={{ title: 'Collect Stock' }} />
+        <Stack.Screen name="delivery" options={{ title: 'Delivery' }} />
+      </Stack>
+    </>
+  );
 }
-
 
