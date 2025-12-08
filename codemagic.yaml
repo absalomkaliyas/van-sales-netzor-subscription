@@ -65,20 +65,37 @@ workflows:
             echo "✅ gradle-plugin directory exists"
           fi
           
-          # Ensure plugin is registered in buildscript via included build
-          if [ -f "android/build.gradle" ]; then
-            echo "Checking buildscript for plugin registration..."
-            if ! grep -q "expo-module-gradle-plugin\|expo-modules-core.*gradle-plugin" android/build.gradle; then
-              echo "⚠️ Plugin not registered - checking if we need to add included build..."
-              echo "Buildscript section:"
-              grep -A 30 "buildscript" android/build.gradle | head -35
+          # Ensure plugin is available via included build in settings.gradle
+          if [ -f "android/settings.gradle" ] && [ -d "node_modules/expo-modules-core/android/gradle-plugin" ]; then
+            echo "Ensuring plugin is registered via included build..."
+            
+            # Check if included build is already there
+            if ! grep -q "includeBuild.*expo-modules-core.*gradle-plugin" android/settings.gradle; then
+              echo "Adding included build for expo-module-gradle-plugin..."
               
-              # The plugin should be available via included build in settings.gradle
-              # If it's not working, we might need to add it explicitly
-              echo "Note: Plugin should be available via autolinking in settings.gradle"
+              # Get relative path to gradle-plugin
+              PLUGIN_PATH=$(node -e "
+                const path = require('path');
+                const androidDir = path.resolve('android');
+                const pluginPath = path.resolve('node_modules/expo-modules-core/android/gradle-plugin');
+                const relative = path.relative(androidDir, pluginPath);
+                console.log(relative);
+              " 2>/dev/null || echo "../node_modules/expo-modules-core/android/gradle-plugin")
+              
+              # Add included build at the end of settings.gradle
+              printf '\n// Expo module gradle plugin\n' >> android/settings.gradle
+              printf "includeBuild('$PLUGIN_PATH')\n" >> android/settings.gradle
+              
+              echo "✅ Added included build for plugin"
             else
-              echo "✅ Plugin reference found in buildscript"
+              echo "✅ Included build already present"
             fi
+          fi
+          
+          # Verify buildscript
+          if [ -f "android/build.gradle" ]; then
+            echo "Buildscript section:"
+            grep -A 20 "buildscript" android/build.gradle | head -25
           fi
           
       - name: Patch Expo Modules Core (Targeted Root Fix)
