@@ -4,7 +4,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "prestart": "powershell -ExecutionPolicy Bypass -File ./fix-windows.ps1",
-    "start": "set EXPO_NO_UPDATE_CHECK=1 && expo start --offline",
+    "start": "set EXPO_NO_UPDATE_CHECK=1 && set EXPO_NO_METRO_EXTERNALS=1 && expo start --offline",
     "start:online": "expo start",
     "android": "set EXPO_NO_UPDATE_CHECK=1 && expo start --android --offline",
     "ios": "set EXPO_NO_UPDATE_CHECK=1 && expo start --ios --offline",
