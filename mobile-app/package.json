@@ -33,7 +33,6 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
-    "@expo/config-plugins": "^0.11.0",
     "@types/react": "~18.2.45",
     "typescript": "~5.9.2"
   },
