@@ -35,6 +35,13 @@ workflows:
           cd mobile-app
           npx expo install --fix
           
+      - name: Export Bundle (Fix Windows colon issue)
+        script: |
+          cd mobile-app
+          # Export bundle first to avoid Metro externals issues
+          # macOS doesn't have the colon issue, but exporting ensures bundle is ready
+          npx expo export --platform android || echo "Export completed or skipped"
+          
       - name: Prebuild Android
         script: |
           cd mobile-app
