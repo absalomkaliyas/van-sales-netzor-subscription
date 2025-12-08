@@ -58,24 +58,7 @@ workflows:
             fi
           fi
           
-          # Verify settings.gradle
-          echo "Settings.gradle contents:"
-          cat android/settings.gradle
-          
-          # Verify plugin is available via settings.gradle
-          if [ -f "android/settings.gradle" ]; then
-            echo "Checking settings.gradle for expo-modules-core..."
-            if grep -q "expo-modules-core" android/settings.gradle; then
-              echo "✅ expo-modules-core found in settings.gradle"
-            else
-              echo "⚠️ expo-modules-core NOT found in settings.gradle"
-              echo "expo prebuild should have added autolinking"
-              echo "First 50 lines of settings.gradle:"
-              head -50 android/settings.gradle
-            fi
-          fi
-          
-          # Verify expo-modules-core is installed
+          # Verify expo-modules-core is installed and plugin directory exists
           if [ ! -d "node_modules/expo-modules-core" ]; then
             echo "❌ expo-modules-core not installed!"
             npm install expo-modules-core@~1.12.0
@@ -90,9 +73,20 @@ workflows:
             echo "✅ gradle-plugin directory exists"
           fi
           
-          # Show settings.gradle for verification
-          echo "Settings.gradle contents:"
-          cat android/settings.gradle
+          # Verify settings.gradle configuration
+          if [ -f "android/settings.gradle" ]; then
+            echo "Checking settings.gradle for expo-modules-core..."
+            if grep -q "expo-modules-core" android/settings.gradle; then
+              echo "✅ expo-modules-core found in settings.gradle"
+            else
+              echo "⚠️ expo-modules-core NOT found in settings.gradle"
+              echo "expo prebuild should have added autolinking"
+            fi
+            
+            # Show final settings.gradle for verification
+            echo "Final settings.gradle contents:"
+            cat android/settings.gradle
+          fi
           
       - name: Patch Expo Modules Core (Targeted Root Fix)
         script: |
