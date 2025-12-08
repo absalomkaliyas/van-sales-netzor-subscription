@@ -65,37 +65,82 @@ workflows:
             echo "✅ gradle-plugin directory exists"
           fi
           
-          # Ensure plugin is available via included build in settings.gradle
-          if [ -f "android/settings.gradle" ] && [ -d "node_modules/expo-modules-core/android/gradle-plugin" ]; then
-            echo "Ensuring plugin is registered via included build..."
+          # Fix: Add plugin to buildscript classpath (required for plugin to be found)
+          if [ -f "android/build.gradle" ] && [ -d "node_modules/expo-modules-core/android/gradle-plugin" ]; then
+            echo "Checking if plugin is in buildscript classpath..."
             
-            # Check if included build is already there
-            if ! grep -q "includeBuild.*expo-modules-core.*gradle-plugin" android/settings.gradle; then
-              echo "Adding included build for expo-module-gradle-plugin..."
+            if ! grep -q "expo-modules-core.*gradle-plugin" android/build.gradle; then
+              echo "⚠️ Plugin not in buildscript - adding it..."
               
-              # Get relative path to gradle-plugin
-              PLUGIN_PATH=$(node -e "
-                const path = require('path');
-                const androidDir = path.resolve('android');
-                const pluginPath = path.resolve('node_modules/expo-modules-core/android/gradle-plugin');
-                const relative = path.relative(androidDir, pluginPath);
-                console.log(relative);
-              " 2>/dev/null || echo "../node_modules/expo-modules-core/android/gradle-plugin")
-              
-              # Add included build at the end of settings.gradle
-              printf '\n// Expo module gradle plugin\n' >> android/settings.gradle
-              printf "includeBuild('$PLUGIN_PATH')\n" >> android/settings.gradle
-              
-              echo "✅ Added included build for plugin"
+              # Find the buildscript dependencies block
+              if grep -q "buildscript" android/build.gradle && grep -q "dependencies {" android/build.gradle; then
+                # Get the last classpath line number
+                LAST_CLASSPATH=$(grep -n "classpath" android/build.gradle | tail -1 | cut -d: -f1)
+                
+                if [ -n "$LAST_CLASSPATH" ]; then
+                  # Calculate relative path from android/build.gradle to gradle-plugin
+                  PLUGIN_RELATIVE_PATH="../node_modules/expo-modules-core/android/gradle-plugin"
+                  
+                  # Add the plugin as an included build classpath
+                  # Use the correct syntax for Gradle 8+
+                  PLUGIN_LINE="        classpath files(\"$PLUGIN_RELATIVE_PATH\")"
+                  
+                  # Insert after last classpath
+                  sed -i.bak "${LAST_CLASSPATH}a\\
+${PLUGIN_LINE}" android/build.gradle
+                  
+                  echo "✅ Added plugin to buildscript classpath"
+                else
+                  # Find dependencies { line
+                  DEPS_LINE=$(grep -n "dependencies {" android/build.gradle | head -1 | cut -d: -f1)
+                  if [ -n "$DEPS_LINE" ]; then
+                    PLUGIN_RELATIVE_PATH="../node_modules/expo-modules-core/android/gradle-plugin"
+                    PLUGIN_LINE="        classpath files(\"$PLUGIN_RELATIVE_PATH\")"
+                    sed -i.bak "${DEPS_LINE}a\\
+${PLUGIN_LINE}" android/build.gradle
+                    echo "✅ Added plugin to buildscript classpath"
+                  fi
+                fi
+              fi
             else
-              echo "✅ Included build already present"
+              echo "✅ Plugin already in buildscript"
             fi
           fi
           
-          # Verify buildscript
+          # Also ensure plugin is applied in root build.gradle
+          if [ -f "android/build.gradle" ]; then
+            if ! grep -q "id.*expo-module-gradle-plugin" android/build.gradle; then
+              echo "Adding plugin application..."
+              # Find plugins block or add it
+              if grep -q "plugins {" android/build.gradle; then
+                # Add to existing plugins block
+                PLUGINS_LINE=$(grep -n "plugins {" android/build.gradle | head -1 | cut -d: -f1)
+                if [ -n "$PLUGINS_LINE" ]; then
+                  sed -i.bak "${PLUGINS_LINE}a\\
+    id 'expo-module-gradle-plugin'" android/build.gradle
+                  echo "✅ Added plugin to plugins block"
+                fi
+              else
+                # Add plugins block at the top
+                sed -i.bak '1i\
+plugins {\
+    id '\''expo-module-gradle-plugin'\''\
+}\
+' android/build.gradle
+                echo "✅ Added plugins block with plugin"
+              fi
+            else
+              echo "✅ Plugin already applied"
+            fi
+          fi
+          
+          # Show buildscript for verification
           if [ -f "android/build.gradle" ]; then
             echo "Buildscript section:"
-            grep -A 20 "buildscript" android/build.gradle | head -25
+            grep -A 30 "buildscript" android/build.gradle | head -35
+            echo ""
+            echo "Plugins section:"
+            grep -A 10 "plugins {" android/build.gradle | head -15 || echo "No plugins block found"
           fi
           
       - name: Patch Expo Modules Core (Targeted Root Fix)
