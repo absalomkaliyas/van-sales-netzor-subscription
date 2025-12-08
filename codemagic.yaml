@@ -40,12 +40,18 @@ workflows:
           cd mobile-app
           rm -rf android
           npx expo prebuild --platform android --clean
+          # Verify android directory was created
+          if [ ! -d "android" ]; then
+            echo "ERROR: Android directory was not created by prebuild"
+            exit 1
+          fi
           
       - name: Build Android APK
         script: |
           cd mobile-app/android
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          # Build with full error output
+          ./gradlew assembleRelease --no-daemon --stacktrace --info 2>&1 | tee gradle-build.log || (cat gradle-build.log && exit 1)
           
     artifacts:
       - mobile-app/android/app/build/outputs/**/*.apk
