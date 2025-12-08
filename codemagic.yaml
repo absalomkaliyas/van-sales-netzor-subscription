@@ -21,6 +21,8 @@ workflows:
           npm install expo@~50.0.0 --save --legacy-peer-deps
           # Install @expo/config-plugins for SDK 50 compatibility
           npm install @expo/config-plugins@^7.8.0 --save-dev --legacy-peer-deps
+          # Fix ajv dependency issue (required by ajv-keywords)
+          npm install ajv@^8.12.0 --save-dev --legacy-peer-deps || true
           
       - name: Install Expo CLI
         script: |
