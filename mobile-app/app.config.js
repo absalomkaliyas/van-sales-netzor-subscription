@@ -1,4 +1,7 @@
 // app.config.js - Supplier Mobile App Configuration
+// Set environment variable to skip Metro externals (fixes Windows node:sea bug)
+process.env.EXPO_NO_METRO_EXTERNALS = '1';
+
 module.exports = {
   expo: {
     name: "VAN Sales NETZOR - Supplier",

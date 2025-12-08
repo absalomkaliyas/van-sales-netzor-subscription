@@ -24,6 +24,7 @@
   "author": "NETZOR",
   "license": "MIT",
   "devDependencies": {
-    "@expo/config-plugins": "^7.9.2"
+    "@expo/config-plugins": "^7.9.2",
+    "expo": "~50.0.0"
   }
 }
