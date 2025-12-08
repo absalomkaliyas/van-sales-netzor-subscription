@@ -75,3 +75,4 @@ eas build --platform android --profile preview
 ---
 
 **Make sure you're in the `mobile-app` folder before running `npm install`!** 🚀
+

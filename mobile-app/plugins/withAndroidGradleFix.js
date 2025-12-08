@@ -38,3 +38,4 @@ const withAndroidGradleFix = (config) => {
 };
 
 module.exports = withAndroidGradleFix;
+

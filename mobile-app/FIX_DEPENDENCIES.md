@@ -86,3 +86,4 @@ If the error persists after running `npx expo install --fix`, it might be an Exp
 ---
 
 **Run `npx expo install --fix` first - that's the most important step!** 🚀
+

@@ -96,3 +96,4 @@ After running the build, you should see:
 ---
 
 **Run `npm install` and `npx expo install --fix` first, then rebuild!** 🚀
+

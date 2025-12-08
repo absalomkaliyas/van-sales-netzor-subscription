@@ -55,3 +55,4 @@ eas build --platform android --profile preview
 ---
 
 **The build should succeed now!** 🚀
+

@@ -73,3 +73,4 @@ eas build --platform android --profile preview
 ---
 
 **Run the install command to fix the versions!** 🚀
+

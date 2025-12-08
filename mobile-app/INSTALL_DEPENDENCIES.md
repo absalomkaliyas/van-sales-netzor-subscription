@@ -58,3 +58,4 @@ eas build --platform android --profile preview
 ---
 
 **Run `npm install` first, then everything else will work!** 🚀
+

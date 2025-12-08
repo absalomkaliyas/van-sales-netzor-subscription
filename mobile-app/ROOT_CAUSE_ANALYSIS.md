@@ -67,3 +67,4 @@ If you must stay on SDK 50, you need to patch the build.gradle files, but this i
 ---
 
 **Recommendation: Upgrade to SDK 51 - it's the proper fix!** 🚀
+
