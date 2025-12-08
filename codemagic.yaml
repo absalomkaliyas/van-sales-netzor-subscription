@@ -37,6 +37,31 @@ workflows:
           # Clean prebuild ensures fresh config
           npx expo prebuild --platform android --clean
           
+          # Fix: Add includeBuild for the plugin in settings.gradle (REQUIRED for plugin to be found)
+          if [ -f "android/settings.gradle" ] && [ -d "node_modules/expo-modules-core/android/gradle-plugin" ]; then
+            echo "Ensuring plugin is registered via includeBuild..."
+            
+            # Check if includeBuild is already there
+            if ! grep -q "includeBuild.*expo-modules-core.*gradle-plugin" android/settings.gradle; then
+              echo "Adding includeBuild for expo-module-gradle-plugin..."
+              
+              # Get relative path to gradle-plugin from android directory
+              PLUGIN_RELATIVE="../node_modules/expo-modules-core/android/gradle-plugin"
+              
+              # Add includeBuild at the end of settings.gradle
+              printf '\n// Expo module gradle plugin - REQUIRED for plugin to be found\n' >> android/settings.gradle
+              printf "includeBuild('$PLUGIN_RELATIVE')\n" >> android/settings.gradle
+              
+              echo "✅ Added includeBuild for plugin"
+            else
+              echo "✅ includeBuild already present"
+            fi
+          fi
+          
+          # Verify settings.gradle
+          echo "Settings.gradle contents:"
+          cat android/settings.gradle
+          
           # Verify plugin is available via settings.gradle
           if [ -f "android/settings.gradle" ]; then
             echo "Checking settings.gradle for expo-modules-core..."
