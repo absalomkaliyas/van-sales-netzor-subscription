@@ -16,6 +16,16 @@
 3. Find and select: **`van-sales-netzor-subscription`**
 4. Click **"Add application"**
 
+### Step 2.5: Select Project Type
+
+When Codemagic asks you to **"Select project type"**, choose:
+
+- **Option 1 (Recommended):** Select **"React Native"** or **"React Native (Expo)"**
+- **Option 2:** If you see **"Other"** or **"Custom"**, select that
+- **Option 3:** If you see **"YAML configuration"**, select that (since you have `codemagic.yaml`)
+
+**Important:** After selecting, Codemagic should detect your `codemagic.yaml` file automatically. If it asks to configure manually, you can skip that since your YAML file is already set up!
+
 ### Step 3: Configure Environment Variables
 
 1. In your app settings, go to **"Environment variables"**
@@ -29,7 +39,7 @@
 
    **Variable 2:**
    - **Name:** `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-   - **Value:** `[Your Supabase anon key]`
+   - **Value:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobGVkc25qem92aGFtZGRyamFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NTI3NTMsImV4cCI6MjA4MDQyODc1M30.sNadPpNI1Sbno8Fxnx1FKY4s_xhau95T0PicdFEUUFY`
    - **Group:** `expo_secrets`
    - **Secure:** Yes (mark as secure)
 

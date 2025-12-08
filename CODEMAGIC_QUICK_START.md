@@ -12,7 +12,7 @@ Go to **Environment variables** → Add:
 
 ```
 EXPO_PUBLIC_SUPABASE_URL = https://lhledsnjzovhamddrjas.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY = [your key]
+EXPO_PUBLIC_SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxobGVkc25qem92aGFtZGRyamFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NTI3NTMsImV4cCI6MjA4MDQyODc1M30.sNadPpNI1Sbno8Fxnx1FKY4s_xhau95T0PicdFEUUFY
 ```
 
 **Important:** Set **Group** to: `expo_secrets`
